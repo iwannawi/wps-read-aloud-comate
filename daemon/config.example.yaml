@@ -4,5 +4,5 @@ piper:
   model: "/opt/wps-read-aloud/voices/zh_CN.onnx"
 espeak:
   bin: "/opt/wps-read-aloud/engines/espeak-ng/espeak-ng"
-  voice: "zh"
+  voice: "cmn"
   english_voice: "en"

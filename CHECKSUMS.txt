@@ -1,7 +1,7 @@
 # 校验说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.7
+版本：1.0.8
 架构：arm64
 开发者：zhangjingyao
 发布时间：20260515
@@ -11,5 +11,5 @@
 在目标系统上可以使用以下命令校验：
 
 ```bash
-sha256sum wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
+sha256sum wps-read-aloud-zhangjingyao_1.0.8_arm64.deb
 ```

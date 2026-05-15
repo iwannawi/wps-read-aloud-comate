@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档朗读</title>
+  <link rel="stylesheet" href="assets/dialog.css">
+</head>
+<body>
+  <main class="dialog" id="dialog">
+    <header class="dialog-header">
+      <div class="dialog-icon" id="dialogIcon">i</div>
+      <div>
+        <h1 id="dialogTitle">文档朗读</h1>
+        <p id="dialogMessage"></p>
+      </div>
+    </header>
+    <section class="dialog-section" id="fieldsSection" hidden>
+      <dl id="fields"></dl>
+    </section>
+    <section class="dialog-section" id="detailsSection" hidden>
+      <h2>播放器探测结果</h2>
+      <div id="details"></div>
+    </section>
+    <section class="dialog-section" id="linksSection" hidden>
+      <h2>说明文件</h2>
+      <div id="links"></div>
+    </section>
+    <footer>
+      <button type="button" id="closeBtn">确定</button>
+    </footer>
+  </main>
+  <script src="assets/dialog.js"></script>
+</body>
+</html>

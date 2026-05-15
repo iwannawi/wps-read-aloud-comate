@@ -74,7 +74,7 @@ git push origin v1.0.1-20260515
 当前交付包名示例：
 
 ```text
-wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
+wps-read-aloud-zhangjingyao_1.0.8_arm64.deb
 ```
 
 ## Codex 自动执行

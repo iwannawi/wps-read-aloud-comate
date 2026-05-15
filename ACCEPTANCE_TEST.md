@@ -1,13 +1,13 @@
 # 验收测试说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.7
+版本：1.0.8
 目标环境：银河麒麟 V10 ARM64 + WPS 2023 for Linux
 
 ## 安装测试
 
 ```bash
-sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
+sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.8_arm64.deb
 ```
 
 预期结果：
@@ -37,7 +37,7 @@ systemctl status wps-tts.service --no-pager
 2. 打开 WPS 文字。
 3. 确认 WPS 顶部出现“文档朗读”选项卡。
 4. 确认没有额外打开右侧任务窗格。
-5. 确认选项卡中包含“朗读选区、朗读全文、暂停、继续、停止、语速、音量、状态检查、关于”。
+5. 确认选项卡中包含“全文朗读、从当前位置朗读、选区朗读、暂停、继续、停止、语速、音量、状态检查、关于”。
 6. 点击“关于”，确认可以看到加载项名称、开发者 `zhangjingyao`、发布时间 `20260515` 和说明文件链接。
 7. 打开一份包含中文正文的文档。
 8. 选中一句或一段文字，点击“朗读选区”。
@@ -60,6 +60,10 @@ systemctl status wps-tts.service --no-pager
 - 加载项按语句逐句朗读。
 - 当前语句同步选中。
 - 播放过程中可以暂停、继续、停止。
+- “从当前位置朗读”应从当前光标位置或选区起点开始朗读到文档结尾。
+- 语速下拉框默认显示 `1.0x`，音量下拉框默认显示 `80%`。
+- 调整音量后，Piper 生成的朗读音量应有明显变化。
+- 状态检查和关于弹窗应使用统一窗口样式，关于中的说明文件链接可点击打开。
 - 不应出现“WPS 内置浏览器阻止了自动播放”的提示。
 - 不应出现 `Unexpected non-whitespace character after JSON` 这类原始技术错误。
 - 日志中不应出现 `failed to open audio file "/tmp/wps-read-aloud-*.wav": Permission denied`。

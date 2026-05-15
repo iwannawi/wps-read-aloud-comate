@@ -1,7 +1,7 @@
 # 第三方源码获取说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.7
+版本：1.0.8
 开发者：zhangjingyao
 发布时间：20260515
 

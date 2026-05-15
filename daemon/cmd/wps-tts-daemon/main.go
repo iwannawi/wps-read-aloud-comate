@@ -29,7 +29,7 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.7"
+const AppVersion = "1.0.8"
 
 const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 
@@ -139,7 +139,7 @@ func defaultConfig() Config {
 		},
 		Espeak: EspeakConfig{
 			Bin:          "/opt/wps-read-aloud/engines/espeak-ng/espeak-ng",
-			Voice:        "zh",
+			Voice:        "cmn",
 			EnglishVoice: "en",
 		},
 	}
@@ -318,6 +318,9 @@ func (s *Server) synthesize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer os.Remove(wavPath)
+	if err := applyWavVolume(wavPath, req.Volume); err != nil {
+		log.Printf("volume adjustment skipped for %s: %v", id, err)
+	}
 
 	w.Header().Set("Content-Type", "audio/wav")
 	w.Header().Set("Cache-Control", "no-store")
@@ -348,6 +351,9 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 		wavPath, err = s.synthesizeSpeech(ctx, group, req)
 	}
 	if err == nil && wavPath != "" {
+		if err := applyWavVolume(wavPath, req.Volume); err != nil {
+			log.Printf("volume adjustment skipped for %s: %v", id, err)
+		}
 		err = s.playAudio(ctx, group, wavPath, req.Volume)
 		if err != nil {
 			log.Printf("system audio playback failed; re-probing audio players: %v", err)
@@ -433,6 +439,9 @@ func (s *Server) stopLocked() {
 func (s *Server) synthesizeSpeech(ctx context.Context, group *processGroup, req SpeakRequest) (string, error) {
 	engine := detectEngine(s.cfg)
 	s.engine = engine
+	if !isMostlyLatin(req.Text) {
+		req.Text = normalizeMandarinText(req.Text)
+	}
 	switch engine {
 	case "piper":
 		if isMostlyLatin(req.Text) && resolveEspeakBin(s.cfg) != "" {
@@ -701,6 +710,85 @@ func saveAudioProbe(result audioProbeResult) error {
 		return err
 	}
 	return os.WriteFile(audioProbePath, append(data, '\n'), 0o644)
+}
+
+func applyWavVolume(path string, volume int) error {
+	if volume <= 0 {
+		volume = 80
+	}
+	if volume == 80 {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if len(data) < 44 || string(data[0:4]) != "RIFF" || string(data[8:12]) != "WAVE" {
+		return errors.New("unsupported wav format")
+	}
+	offset := 12
+	var audioFormat uint16
+	var bitsPerSample uint16
+	dataStart := -1
+	dataSize := 0
+	for offset+8 <= len(data) {
+		chunkID := string(data[offset : offset+4])
+		chunkSize := int(binary.LittleEndian.Uint32(data[offset+4 : offset+8]))
+		chunkData := offset + 8
+		if chunkData+chunkSize > len(data) {
+			break
+		}
+		switch chunkID {
+		case "fmt ":
+			if chunkSize >= 16 {
+				audioFormat = binary.LittleEndian.Uint16(data[chunkData : chunkData+2])
+				bitsPerSample = binary.LittleEndian.Uint16(data[chunkData+14 : chunkData+16])
+			}
+		case "data":
+			dataStart = chunkData
+			dataSize = chunkSize
+		}
+		offset = chunkData + chunkSize
+		if offset%2 == 1 {
+			offset += 1
+		}
+	}
+	if audioFormat != 1 || bitsPerSample != 16 || dataStart < 0 {
+		return errors.New("unsupported wav encoding")
+	}
+	gain := float64(volume) / 80.0
+	end := dataStart + dataSize
+	for i := dataStart; i+1 < end; i += 2 {
+		sample := int16(binary.LittleEndian.Uint16(data[i : i+2]))
+		scaled := int(float64(sample) * gain)
+		if scaled > 32767 {
+			scaled = 32767
+		}
+		if scaled < -32768 {
+			scaled = -32768
+		}
+		binary.LittleEndian.PutUint16(data[i:i+2], uint16(int16(scaled)))
+	}
+	return os.WriteFile(path, data, 0o600)
+}
+
+func normalizeMandarinText(text string) string {
+	replacer := strings.NewReplacer(
+		"0", "零",
+		"1", "一",
+		"2", "二",
+		"3", "三",
+		"4", "四",
+		"5", "五",
+		"6", "六",
+		"7", "七",
+		"8", "八",
+		"9", "九",
+		"%", "百分之",
+		"℃", "摄氏度",
+		"&", "和",
+	)
+	return strings.TrimSpace(replacer.Replace(text))
 }
 
 func prioritizedAudioPlayers(wavPath string, volume int) []audioPlayer {

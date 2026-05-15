@@ -15,11 +15,57 @@
   var isPaused = false;
   var lastActionAt = 0;
 
-  function notify(message) {
+  function notify(message, title, variant) {
+    showDialog({
+      title: title || "文档朗读",
+      variant: variant || "info",
+      message: message
+    });
+  }
+
+  function showDialog(options) {
+    var payload = encodeURIComponent(toBase64(JSON.stringify(options || {})));
+    var url = SERVICE_BASE + "/dialog.html?payload=" + payload;
     try {
-      window.alert(message);
+      var popup = window.open(url, "wpsReadAloudDialog", "width=760,height=520,resizable=yes,scrollbars=no");
+      if (popup && typeof popup.focus === "function") {
+        popup.focus();
+        return;
+      }
     } catch (_) {
-      console.log(message);
+      // Fall back below.
+    }
+    dialogFallback(options);
+  }
+
+  function toBase64(text) {
+    return btoa(unescape(encodeURIComponent(text)));
+  }
+
+  function dialogFallback(options) {
+    var lines = [];
+    if (options && options.title) {
+      lines.push(options.title);
+      lines.push("");
+    }
+    if (options && options.message) {
+      lines.push(options.message);
+    }
+    if (options && options.fields) {
+      for (var i = 0; i < options.fields.length; i += 1) {
+        lines.push(options.fields[i].label + "：" + options.fields[i].value);
+      }
+    }
+    if (options && options.links) {
+      lines.push("");
+      for (var j = 0; j < options.links.length; j += 1) {
+        lines.push(options.links[j].label + "：" + options.links[j].url);
+      }
+    }
+    try {
+      window.alert(lines.join("\n"));
+    } catch (_) {
+      console.log(lines.join("\n"));
     }
   }
 
@@ -37,6 +83,7 @@
   function onGetImage(control) {
     var icons = {
       speakSelection: "assets/icons/read-selection.png",
+      speakFromCursor: "assets/icons/read-current.png",
       speakDocument: "assets/icons/read-document.png",
       pauseSpeak: "assets/icons/pause.png",
       resumeSpeak: "assets/icons/play.png",
@@ -128,6 +175,39 @@
     return {
       text: range.Text !== undefined ? String(range.Text || "") : "",
       start: range.Start !== undefined ? Number(range.Start) : 0
+    };
+  }
+
+  function readCurrentSource() {
+    var app = getWpsApplication();
+    var doc = app.ActiveDocument;
+    if (!doc) {
+      return { text: "", start: 0 };
+    }
+    var selection = app.Selection;
+    var start = 0;
+    if (selection) {
+      var selectedRange = selection.Range || selection;
+      if (selectedRange && selectedRange.Start !== undefined) {
+        start = Number(selectedRange.Start) || 0;
+      }
+    }
+    var end = null;
+    if (doc.Content && doc.Content.End !== undefined) {
+      end = Number(doc.Content.End);
+    }
+    var range = null;
+    if (doc.Range && typeof doc.Range === "function") {
+      range = end === null ? doc.Range(start) : doc.Range(start, end);
+    } else if (doc.Content) {
+      range = doc.Content;
+    }
+    if (!range) {
+      return { text: "", start: start };
+    }
+    return {
+      text: range.Text !== undefined ? String(range.Text || "") : "",
+      start: range.Start !== undefined ? Number(range.Start) : start
     };
   }
 
@@ -377,6 +457,18 @@
     status("语速已设置为 " + rate + "x。");
   }
 
+  function onRateSelected() {
+    var map = {
+      "0.6": "rate06",
+      "0.8": "rate08",
+      "1": "rate10",
+      "1.2": "rate12",
+      "1.4": "rate14",
+      "1.6": "rate16"
+    };
+    return map[String(rate)] || "rate10";
+  }
+
   function onVolumeChanged(control, selectedId) {
     var map = {
       volume40: 40,
@@ -389,39 +481,57 @@
     status("音量已设置为 " + volume + "%。");
   }
 
+  function onVolumeSelected() {
+    return "volume" + String(volume || 80);
+  }
+
   async function onCheckStatus() {
     try {
       var health = await request("/health");
       if (!health.version) {
-        notify("本地朗读服务版本较旧或尚未重启。请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。");
+        notify("本地朗读服务版本较旧或尚未重启。请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。", "服务状态", "warning");
         return;
       }
       if (health.ok) {
         var probe = health.audio_probe || {};
-        var probeInfo = probe.probed_at ? "\n探测时间：" + probe.probed_at : "";
-        notify("本地朗读服务正常。\n服务版本：" + health.version + "\n当前引擎：" + health.engine + "\n当前播放器：" + (health.audio_player || "未检测到") + probeInfo);
+        showDialog({
+          title: "服务状态",
+          variant: "success",
+          message: "本地朗读服务运行正常。",
+          fields: [
+            { label: "服务版本", value: health.version },
+            { label: "语音引擎", value: health.engine || "未知" },
+            { label: "当前播放器", value: health.audio_player || "未检测到" },
+            { label: "探测时间", value: probe.probed_at || "尚未探测" }
+          ],
+          details: probe.results || []
+        });
       } else {
-        notify("本地朗读服务已启动，但语音引擎不可用。请联系管理员重新安装。");
+        notify("本地朗读服务已启动，但语音引擎不可用。请联系管理员重新安装。", "服务状态", "error");
       }
     } catch (error) {
-      notify(userMessage(error));
+      notify(userMessage(error), "服务状态", "error");
     }
   }
 
   function onAbout() {
-    notify([
-      "WPS 文档朗读加载项",
-      "开发者：zhangjingyao",
-      "发布时间：20260515",
-      "版本：1.0.7",
-      "服务地址：127.0.0.1:19860",
-      "",
-      "说明文件：",
-      "发布说明：http://127.0.0.1:19860/docs/RELEASE_NOTES.md",
-      "验收测试：http://127.0.0.1:19860/docs/ACCEPTANCE_TEST.md",
-      "第三方声明：http://127.0.0.1:19860/docs/THIRD_PARTY_NOTICES.md",
-      "源码说明：http://127.0.0.1:19860/docs/SOURCE_OFFER.md"
-    ].join("\n"));
+    showDialog({
+      title: "WPS 文档朗读加载项",
+      variant: "info",
+      message: "面向银河麒麟 V10 ARM64 与 WPS 2023 for Linux 的离线文档朗读加载项。",
+      fields: [
+        { label: "开发者", value: "zhangjingyao" },
+        { label: "发布时间", value: "20260515" },
+        { label: "版本", value: "1.0.8" },
+        { label: "服务地址", value: "127.0.0.1:19860" }
+      ],
+      links: [
+        { label: "发布说明", url: SERVICE_BASE + "/docs/RELEASE_NOTES.md" },
+        { label: "验收测试", url: SERVICE_BASE + "/docs/ACCEPTANCE_TEST.md" },
+        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" },
+        { label: "源码说明", url: SERVICE_BASE + "/docs/SOURCE_OFFER.md" }
+      ]
+    });
   }
 
   function onSpeakSelection() {
@@ -435,6 +545,14 @@
   function onSpeakDocument() {
     try {
       speakSource(readDocumentSource());
+    } catch (error) {
+      notify(userMessage(error));
+    }
+  }
+
+  function onSpeakFromCursor() {
+    try {
+      speakSource(readCurrentSource());
     } catch (error) {
       notify(userMessage(error));
     }
@@ -455,8 +573,9 @@
   function onRibbonAction(control) {
     var id = controlId(control);
     var actions = {
-      speakSelection: onSpeakSelection,
       speakDocument: onSpeakDocument,
+      speakFromCursor: onSpeakFromCursor,
+      speakSelection: onSpeakSelection,
       pauseSpeak: onPauseSpeak,
       resumeSpeak: onResumeSpeak,
       stopSpeak: onStopSpeak,
@@ -477,6 +596,7 @@
 
   window.onSpeakSelection = onSpeakSelection;
   window.onSpeakDocument = onSpeakDocument;
+  window.onSpeakFromCursor = onSpeakFromCursor;
   window.onPauseSpeak = onPauseSpeak;
   window.onResumeSpeak = onResumeSpeak;
   window.onStopSpeak = onStopSpeak;
@@ -493,11 +613,14 @@
     OnGetImage: onGetImage,
     OnSpeakSelection: onSpeakSelection,
     OnSpeakDocument: onSpeakDocument,
+    OnSpeakFromCursor: onSpeakFromCursor,
     OnPauseSpeak: onPauseSpeak,
     OnResumeSpeak: onResumeSpeak,
     OnStopSpeak: onStopSpeak,
     OnRateChanged: onRateChanged,
     OnVolumeChanged: onVolumeChanged,
+    OnRateSelected: onRateSelected,
+    OnVolumeSelected: onVolumeSelected,
     OnCheckStatus: onCheckStatus,
     OnAbout: onAbout
   };

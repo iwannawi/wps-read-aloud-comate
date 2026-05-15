@@ -1,7 +1,7 @@
 # 发布说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.7
+版本：1.0.8
 架构：arm64
 开发者：zhangjingyao
 发布时间：20260515
@@ -34,6 +34,10 @@
 - 系统播放器改为顺序尝试 `pw-play`、`paplay`、`aplay`，如果 PipeWire 返回 `no node available`，会自动切换到下一种播放方式。
 - 新增 `/audio/probe` 播放器探测接口，安装后自动探测并把结果保存到 `/var/lib/wps-read-aloud/audio-player.json`。
 - 后续朗读优先使用已验证成功的播放器；如果缓存播放器失效，会重新探测并更新默认选择。
+- 增加“从当前位置朗读”，并将按钮顺序调整为“全文朗读、从当前位置朗读、选区朗读”。
+- 语速和音量下拉框增加默认选项显示，音量会实际作用于 Piper 生成的 WAV 音频。
+- 状态检查和关于改为统一 HTML 弹窗，说明文件链接可直接点击打开。
+- eSpeak NG 兜底默认音色改为普通话 `cmn`，并对中文/中英混合文本做轻量普通话预处理。
 - 前端增加按钮连点节流和播放状态保护。
 - 服务端合成请求带超时控制，并在停止时清理语音引擎进程。
 - 低配置机器保护：限制单次最多处理 1000 句，单句最多 1000 字，并在合成等待时提示用户。
@@ -44,7 +48,7 @@
 ## 安装
 
 ```bash
-sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
+sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.8_arm64.deb
 ```
 
 如果安装时 WPS 已经打开，请安装完成后重启 WPS。
