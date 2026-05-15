@@ -76,3 +76,13 @@ git push origin v1.0.1-20260515
 ```text
 wps-read-aloud-zhangjingyao_1.0.1_arm64.deb
 ```
+
+## Codex 自动执行
+
+本项目后续由 Codex 自动执行本地 Git 与 GitHub 版本管理，用户不需要手动运行提交、推送、打标签或构建命令。
+
+详细规则见：
+
+```text
+docs/CODEX_AUTOMATION.md
+```
