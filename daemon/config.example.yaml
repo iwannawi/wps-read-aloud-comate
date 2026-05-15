@@ -1,8 +1,14 @@
 listen: "127.0.0.1:19860"
-piper:
-  bin: "/opt/wps-read-aloud/engines/piper/piper"
-  model: "/opt/wps-read-aloud/voices/zh_CN.onnx"
-espeak:
-  bin: "/opt/wps-read-aloud/engines/espeak-ng/espeak-ng"
-  voice: "cmn"
-  english_voice: "en"
+sherpa:
+  bin: "/opt/wps-read-aloud/engines/sherpa-onnx/sherpa-onnx-offline-tts"
+  num_threads: 2
+  target_sample_rate: 22050
+  zh_matcha_model: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/model-steps-3.onnx"
+  zh_matcha_vocoder: "/opt/wps-read-aloud/voices/sherpa/vocos-22khz-univ.onnx"
+  zh_matcha_lexicon: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/lexicon.txt"
+  zh_matcha_tokens: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/tokens.txt"
+  zh_rule_fsts: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/phone.fst,/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/date.fst,/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/number.fst"
+  en_matcha_model: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/model-steps-3.onnx"
+  en_matcha_vocoder: "/opt/wps-read-aloud/voices/sherpa/vocos-22khz-univ.onnx"
+  en_matcha_tokens: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/tokens.txt"
+  en_matcha_data_dir: "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/espeak-ng-data"

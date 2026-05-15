@@ -524,7 +524,7 @@
       fields: [
         { label: "开发者", value: "zhangjingyao" },
         { label: "发布时间", value: "20260515" },
-        { label: "版本", value: "1.0.9" },
+        { label: "版本", value: "1.0.10" },
         { label: "服务地址", value: "127.0.0.1:19860" }
       ],
       links: [

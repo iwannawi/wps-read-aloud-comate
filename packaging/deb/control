@@ -1,5 +1,5 @@
 Package: wps-read-aloud-zhangjingyao
-Version: 1.0.9
+Version: 1.0.10
 Section: utils
 Priority: optional
 Architecture: arm64
@@ -7,5 +7,5 @@ Maintainer: zhangjingyao <zhangjingyao@example.invalid>
 Description: Offline read-aloud WPS JS add-in for Kylin ARM64
  Developer: zhangjingyao. Release date: 20260515.
  Provides a WPS JS add-in and local offline TTS daemon. The daemon listens
- only on 127.0.0.1 and uses bundled Piper first, then bundled eSpeak NG as
- fallback.
+ only on 127.0.0.1 and uses bundled Sherpa-onnx Matcha Chinese and English
+ models for segmented offline read-aloud.

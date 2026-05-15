@@ -12,7 +12,7 @@
 企业交付优先使用 `.deb`：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 安装后会自动：
@@ -48,7 +48,7 @@ curl http://127.0.0.1:19860/selftest
 - “状态检查”能弹出本地服务状态。
 - 朗读时 WPS 文档中当前语句会被选中，进入下一句时同步更新选区。
 - 服务接口只监听 `127.0.0.1:19860`。
-- 断网状态下 Piper 或 eSpeak NG 能正常工作。
+- 断网状态下 Sherpa-onnx 中文/英文离线模型能正常工作。
 
 ## 5. 手工构建流程
 
@@ -63,13 +63,11 @@ python3 packaging/deb/build_deb.py
 构建前需要准备：
 
 ```text
-engines/piper/piper
-engines/piper/lib/
-engines/espeak-ng/espeak-ng
-engines/espeak-ng/espeak-ng-data/
-engines/espeak-ng/lib/
-voices/zh_CN.onnx
-voices/zh_CN.onnx.json
+engines/sherpa-onnx/sherpa-onnx-offline-tts
+engines/sherpa-onnx/lib/
+voices/sherpa/matcha-icefall-zh-baker/
+voices/sherpa/matcha-icefall-en_US-ljspeech/
+voices/sherpa/vocos-22khz-univ.onnx
 ```
 
 `build-arm64.sh` 会同步 `addin/` 到 Go embedded web 目录；`build_deb.py` 会在打包前再次校验同步状态。

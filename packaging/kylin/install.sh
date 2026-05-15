@@ -15,7 +15,7 @@ if [[ ! -x "${ROOT_DIR}/dist/wps-tts-daemon" ]]; then
   exit 1
 fi
 
-sudo mkdir -p "${APP_DIR}/daemon" "${APP_DIR}/addin" "${APP_DIR}/voices" "${APP_DIR}/engines/piper" "${CONFIG_DIR}"
+sudo mkdir -p "${APP_DIR}/daemon" "${APP_DIR}/addin" "${APP_DIR}/voices" "${APP_DIR}/engines/sherpa-onnx" "${CONFIG_DIR}"
 sudo cp "${ROOT_DIR}/dist/wps-tts-daemon" "${APP_DIR}/daemon/wps-tts-daemon"
 sudo cp -r "${ROOT_DIR}/addin/." "${APP_DIR}/addin/"
 sudo chmod +x "${APP_DIR}/daemon/wps-tts-daemon"

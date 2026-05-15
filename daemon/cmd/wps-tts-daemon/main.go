@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,25 +30,28 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.9"
+const AppVersion = "1.0.10"
 
 const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 
 type Config struct {
 	Listen string
-	Piper  PiperConfig
-	Espeak EspeakConfig
+	Sherpa SherpaConfig
 }
 
-type PiperConfig struct {
-	Bin   string
-	Model string
-}
-
-type EspeakConfig struct {
-	Bin          string
-	Voice        string
-	EnglishVoice string
+type SherpaConfig struct {
+	Bin              string
+	NumThreads       int
+	TargetSampleRate int
+	ZhMatchaModel    string
+	ZhMatchaVocoder  string
+	ZhMatchaLexicon  string
+	ZhMatchaTokens   string
+	ZhRuleFsts       string
+	EnMatchaModel    string
+	EnMatchaVocoder  string
+	EnMatchaTokens   string
+	EnMatchaDataDir  string
 }
 
 type SpeakRequest struct {
@@ -133,14 +137,19 @@ func main() {
 func defaultConfig() Config {
 	return Config{
 		Listen: "127.0.0.1:19860",
-		Piper: PiperConfig{
-			Bin:   "/opt/wps-read-aloud/engines/piper/piper",
-			Model: "/opt/wps-read-aloud/voices/zh_CN.onnx",
-		},
-		Espeak: EspeakConfig{
-			Bin:          "/opt/wps-read-aloud/engines/espeak-ng/espeak-ng",
-			Voice:        "cmn",
-			EnglishVoice: "en",
+		Sherpa: SherpaConfig{
+			Bin:              "/opt/wps-read-aloud/engines/sherpa-onnx/sherpa-onnx-offline-tts",
+			NumThreads:       2,
+			TargetSampleRate: 22050,
+			ZhMatchaModel:    "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/model-steps-3.onnx",
+			ZhMatchaVocoder:  "/opt/wps-read-aloud/voices/sherpa/vocos-22khz-univ.onnx",
+			ZhMatchaLexicon:  "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/lexicon.txt",
+			ZhMatchaTokens:   "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/tokens.txt",
+			ZhRuleFsts:       "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/phone.fst,/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/date.fst,/opt/wps-read-aloud/voices/sherpa/matcha-icefall-zh-baker/number.fst",
+			EnMatchaModel:    "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/model-steps-3.onnx",
+			EnMatchaVocoder:  "/opt/wps-read-aloud/voices/sherpa/vocos-22khz-univ.onnx",
+			EnMatchaTokens:   "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/tokens.txt",
+			EnMatchaDataDir:  "/opt/wps-read-aloud/voices/sherpa/matcha-icefall-en_US-ljspeech/espeak-ng-data",
 		},
 	}
 }
@@ -154,8 +163,6 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 		playerName = probe.Selected
 	} else if len(players) > 0 {
 		playerName = filepath.Base(players[0].bin)
-	} else if resolveEspeakBin(s.cfg) != "" {
-		playerName = "bundled-espeak-ng"
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":           engine != "none",
@@ -212,7 +219,8 @@ func (s *Server) selftest(w http.ResponseWriter, r *http.Request) {
 func (s *Server) voices(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"voices": []map[string]string{
-			{"id": "zh_CN", "name": "中文普通话"},
+			{"id": "zh_CN", "name": "中文普通话 Sherpa Matcha Baker"},
+			{"id": "en_US", "name": "English Sherpa Matcha LJSpeech"},
 		},
 	})
 }
@@ -345,11 +353,7 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 
 	var wavPath string
 	var err error
-	if loadAudioProbe().Selected == "bundled-espeak-ng" || len(prioritizedAudioPlayers("", req.Volume)) == 0 {
-		err = s.speakDirect(ctx, group, req)
-	} else {
-		wavPath, err = s.synthesizeSpeech(ctx, group, req)
-	}
+	wavPath, err = s.synthesizeSpeech(ctx, group, req)
 	if err == nil && wavPath != "" {
 		if err := applyWavVolume(wavPath, req.Volume); err != nil {
 			log.Printf("volume adjustment skipped for %s: %v", id, err)
@@ -358,15 +362,9 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("system audio playback failed; re-probing audio players: %v", err)
 			probe := s.probeAudioPlayers(context.Background())
-			if probe.Selected == "bundled-espeak-ng" {
-				err = s.speakDirect(ctx, group, req)
-			} else {
+			if probe.Selected != "" {
 				err = s.playAudio(ctx, group, wavPath, req.Volume)
 			}
-		}
-		if err != nil {
-			log.Printf("system audio playback still failed; trying bundled eSpeak fallback: %v", err)
-			err = s.speakDirect(ctx, group, req)
 		}
 	}
 	s.mu.Lock()
@@ -443,76 +441,92 @@ func (s *Server) synthesizeSpeech(ctx context.Context, group *processGroup, req 
 		req.Text = normalizeMandarinText(req.Text)
 	}
 	switch engine {
-	case "piper":
-		if isMostlyLatin(req.Text) && resolveEspeakBin(s.cfg) != "" {
-			return s.runEspeak(ctx, group, req)
-		}
-		return s.runPiper(ctx, group, req)
-	case "espeak-ng":
-		return s.runEspeak(ctx, group, req)
+	case "sherpa-onnx":
+		return s.runSherpaMixed(ctx, group, req)
 	default:
 		return "", errors.New("no available tts engine")
 	}
 }
 
-func (s *Server) runPiper(ctx context.Context, group *processGroup, req SpeakRequest) (string, error) {
-	tmp, err := os.CreateTemp("", "wps-read-aloud-*.wav")
-	if err != nil {
-		return "", fmt.Errorf("piper failed: %w", err)
-	}
-	tmpPath := tmp.Name()
-	tmp.Close()
-
-	lengthScale := fmt.Sprintf("%.2f", piperLengthScale(req.Rate))
-	cmd := exec.CommandContext(
-		ctx,
-		s.cfg.Piper.Bin,
-		"--model", s.cfg.Piper.Model,
-		"--length_scale", lengthScale,
-		"--noise_scale", "0.333",
-		"--noise_w", "0.5",
-		"--sentence_silence", "0.08",
-		"--output_file", tmpPath,
-	)
-	cmd.Env = runtimeEnv(os.Environ(), filepath.Join(filepath.Dir(s.cfg.Piper.Bin), "lib"), filepath.Join(filepath.Dir(s.cfg.Espeak.Bin), "espeak-ng-data"))
-	cmd.Stdin = strings.NewReader(req.Text)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	startProcess(group, cmd)
-	if err := cmd.Run(); err != nil {
-		os.Remove(tmpPath)
-		return "", fmt.Errorf("piper failed: %w", err)
-	}
-	return tmpPath, nil
+type textSegment struct {
+	lang string
+	text string
 }
 
-func (s *Server) runEspeak(ctx context.Context, group *processGroup, req SpeakRequest) (string, error) {
+var mixedTextTokenRE = regexp.MustCompile(`[\p{Han}]+|[A-Za-z]+(?:[A-Za-z0-9'._%:/+-]*[A-Za-z0-9])?|[0-9]+(?:[._%:/+-][0-9]+)*|[^\p{Han}A-Za-z0-9]+`)
+
+func (s *Server) runSherpaMixed(ctx context.Context, group *processGroup, req SpeakRequest) (string, error) {
+	segments := splitMixedLanguageText(req.Text)
+	if len(segments) == 0 {
+		return "", errors.New("no available tts text")
+	}
+	var wavs []string
+	for _, segment := range segments {
+		segmentReq := req
+		segmentReq.Text = segment.text
+		wavPath, err := s.runSherpaSegment(ctx, group, segmentReq, segment.lang)
+		if err != nil {
+			for _, path := range wavs {
+				os.Remove(path)
+			}
+			return "", err
+		}
+		wavs = append(wavs, wavPath)
+	}
+	if len(wavs) == 1 {
+		return wavs[0], nil
+	}
+	out, err := concatenateWavFiles(wavs, s.cfg.Sherpa.TargetSampleRate)
+	for _, path := range wavs {
+		os.Remove(path)
+	}
+	if err != nil {
+		return "", fmt.Errorf("sherpa-onnx failed: %w", err)
+	}
+	return out, nil
+}
+
+func (s *Server) runSherpaSegment(ctx context.Context, group *processGroup, req SpeakRequest, lang string) (string, error) {
 	tmp, err := os.CreateTemp("", "wps-read-aloud-*.wav")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("sherpa-onnx failed: %w", err)
 	}
 	tmpPath := tmp.Name()
 	tmp.Close()
 
-	speed := strconv.Itoa(rateToEspeakSpeed(req.Rate))
-	amplitude := strconv.Itoa(req.Volume * 2)
-	bin := resolveEspeakBin(s.cfg)
-	if bin == "" {
-		os.Remove(tmpPath)
-		return "", errors.New("espeak-ng is unavailable")
+	args := []string{
+		"--num-threads=" + strconv.Itoa(sherpaNumThreads(s.cfg.Sherpa.NumThreads)),
+		"--speed=" + fmt.Sprintf("%.2f", clampRate(req.Rate)),
+		"--output-filename=" + tmpPath,
 	}
-	voice := s.cfg.Espeak.Voice
-	if isMostlyLatin(req.Text) && s.cfg.Espeak.EnglishVoice != "" {
-		voice = s.cfg.Espeak.EnglishVoice
+	if lang == "en" {
+		args = append(args,
+			"--matcha-acoustic-model="+s.cfg.Sherpa.EnMatchaModel,
+			"--matcha-vocoder="+s.cfg.Sherpa.EnMatchaVocoder,
+			"--matcha-tokens="+s.cfg.Sherpa.EnMatchaTokens,
+			"--matcha-data-dir="+s.cfg.Sherpa.EnMatchaDataDir,
+		)
+	} else {
+		args = append(args,
+			"--matcha-acoustic-model="+s.cfg.Sherpa.ZhMatchaModel,
+			"--matcha-vocoder="+s.cfg.Sherpa.ZhMatchaVocoder,
+			"--matcha-lexicon="+s.cfg.Sherpa.ZhMatchaLexicon,
+			"--matcha-tokens="+s.cfg.Sherpa.ZhMatchaTokens,
+		)
+		if fsts := existingRuleFsts(s.cfg.Sherpa.ZhRuleFsts); fsts != "" {
+			args = append(args, "--tts-rule-fsts="+fsts)
+		}
 	}
-	cmd := exec.CommandContext(ctx, bin, "-v", voice, "-s", speed, "-a", amplitude, "-w", tmpPath, req.Text)
-	cmd.Env = runtimeEnv(os.Environ(), filepath.Join(filepath.Dir(bin), "lib"), filepath.Join(filepath.Dir(bin), "espeak-ng-data"))
+	args = append(args, req.Text)
+
+	cmd := exec.CommandContext(ctx, s.cfg.Sherpa.Bin, args...)
+	cmd.Env = runtimeEnv(os.Environ(), filepath.Join(filepath.Dir(s.cfg.Sherpa.Bin), "lib"), s.cfg.Sherpa.EnMatchaDataDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	startProcess(group, cmd)
 	if err := cmd.Run(); err != nil {
 		os.Remove(tmpPath)
-		return "", err
+		return "", fmt.Errorf("sherpa-onnx failed: %w", err)
 	}
 	return tmpPath, nil
 }
@@ -564,28 +578,6 @@ func prepareAudioFileForPlayer(wavPath string, player audioPlayer) error {
 	return os.Chmod(wavPath, 0o600)
 }
 
-func (s *Server) speakDirect(ctx context.Context, group *processGroup, req SpeakRequest) error {
-	speed := strconv.Itoa(rateToEspeakSpeed(req.Rate))
-	amplitude := strconv.Itoa(req.Volume * 2)
-	bin := resolveEspeakBin(s.cfg)
-	if bin == "" {
-		return errors.New("no available audio player")
-	}
-	voice := s.cfg.Espeak.Voice
-	if isMostlyLatin(req.Text) && s.cfg.Espeak.EnglishVoice != "" {
-		voice = s.cfg.Espeak.EnglishVoice
-	}
-	cmd := exec.CommandContext(ctx, bin, "-v", voice, "-s", speed, "-a", amplitude, req.Text)
-	cmd.Env = runtimeEnv(os.Environ(), filepath.Join(filepath.Dir(bin), "lib"), filepath.Join(filepath.Dir(bin), "espeak-ng-data"))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	startProcess(group, cmd)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("audio playback failed: %w", err)
-	}
-	return nil
-}
-
 func (s *Server) probeAudioPlayers(parent context.Context) audioProbeResult {
 	result := audioProbeResult{
 		Version:  AppVersion,
@@ -623,16 +615,6 @@ func (s *Server) probeAudioPlayers(parent context.Context) audioProbeResult {
 		result.Selected = name
 		result.SelectedBin = player.bin
 		break
-	}
-	if result.Selected == "" && resolveEspeakBin(s.cfg) != "" {
-		result.Selected = "bundled-espeak-ng"
-		result.SelectedBin = resolveEspeakBin(s.cfg)
-		result.Results = append(result.Results, audioProbeItem{
-			Name:    "bundled-espeak-ng",
-			Bin:     result.SelectedBin,
-			Status:  "fallback",
-			Message: "system audio players were unavailable; bundled eSpeak NG will be used as fallback",
-		})
 	}
 	if err := saveAudioProbe(result); err != nil {
 		log.Printf("save audio probe failed: %v", err)
@@ -803,10 +785,208 @@ func normalizeMandarinText(text string) string {
 	return strings.TrimSpace(text)
 }
 
+func splitMixedLanguageText(text string) []textSegment {
+	matches := mixedTextTokenRE.FindAllString(text, -1)
+	var segments []textSegment
+	for _, token := range matches {
+		if token == "" {
+			continue
+		}
+		lang := segmentLanguage(token)
+		if len(segments) == 0 {
+			segments = append(segments, textSegment{lang: lang, text: token})
+			continue
+		}
+		last := &segments[len(segments)-1]
+		if lang == "punct" {
+			last.text += token
+			continue
+		}
+		if last.lang == lang || last.lang == "punct" {
+			last.lang = lang
+			last.text += token
+			continue
+		}
+		segments = append(segments, textSegment{lang: lang, text: token})
+	}
+	out := segments[:0]
+	for _, segment := range segments {
+		text := strings.TrimSpace(segment.text)
+		if text != "" {
+			out = append(out, textSegment{lang: segment.lang, text: text})
+		}
+	}
+	return out
+}
+
+func segmentLanguage(text string) string {
+	var latin, cjk int
+	for _, r := range text {
+		switch {
+		case r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z':
+			latin++
+		case r >= 0x4E00 && r <= 0x9FFF:
+			cjk++
+		}
+	}
+	if latin == 0 && cjk == 0 {
+		return "punct"
+	}
+	if latin > cjk {
+		return "en"
+	}
+	return "zh"
+}
+
+func existingRuleFsts(value string) string {
+	var kept []string
+	for _, item := range strings.Split(value, ",") {
+		path := strings.TrimSpace(item)
+		if fileExists(path) {
+			kept = append(kept, path)
+		}
+	}
+	return strings.Join(kept, ",")
+}
+
+type wavPCM struct {
+	format        uint16
+	channels      uint16
+	sampleRate    uint32
+	bitsPerSample uint16
+	data          []byte
+}
+
+func concatenateWavFiles(paths []string, expectedSampleRate int) (string, error) {
+	var combined []byte
+	var spec *wavPCM
+	for _, path := range paths {
+		wav, err := readPCM16Wav(path)
+		if err != nil {
+			return "", err
+		}
+		if expectedSampleRate > 0 && int(wav.sampleRate) != expectedSampleRate {
+			return "", fmt.Errorf("unexpected wav sample rate: %d", wav.sampleRate)
+		}
+		if spec == nil {
+			copySpec := wav
+			copySpec.data = nil
+			spec = &copySpec
+		} else if wav.format != spec.format || wav.channels != spec.channels || wav.sampleRate != spec.sampleRate || wav.bitsPerSample != spec.bitsPerSample {
+			return "", errors.New("wav formats do not match")
+		}
+		combined = append(combined, wav.data...)
+	}
+	if spec == nil {
+		return "", errors.New("no wav files to concatenate")
+	}
+	tmp, err := os.CreateTemp("", "wps-read-aloud-*.wav")
+	if err != nil {
+		return "", err
+	}
+	tmpPath := tmp.Name()
+	if err := writePCM16Wav(tmp, *spec, combined); err != nil {
+		tmp.Close()
+		os.Remove(tmpPath)
+		return "", err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpPath)
+		return "", err
+	}
+	return tmpPath, nil
+}
+
+func readPCM16Wav(path string) (wavPCM, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return wavPCM{}, err
+	}
+	if len(data) < 44 || string(data[0:4]) != "RIFF" || string(data[8:12]) != "WAVE" {
+		return wavPCM{}, errors.New("unsupported wav format")
+	}
+	offset := 12
+	var wav wavPCM
+	dataStart := -1
+	dataSize := 0
+	for offset+8 <= len(data) {
+		chunkID := string(data[offset : offset+4])
+		chunkSize := int(binary.LittleEndian.Uint32(data[offset+4 : offset+8]))
+		chunkData := offset + 8
+		if chunkData+chunkSize > len(data) {
+			break
+		}
+		switch chunkID {
+		case "fmt ":
+			if chunkSize >= 16 {
+				wav.format = binary.LittleEndian.Uint16(data[chunkData : chunkData+2])
+				wav.channels = binary.LittleEndian.Uint16(data[chunkData+2 : chunkData+4])
+				wav.sampleRate = binary.LittleEndian.Uint32(data[chunkData+4 : chunkData+8])
+				wav.bitsPerSample = binary.LittleEndian.Uint16(data[chunkData+14 : chunkData+16])
+			}
+		case "data":
+			dataStart = chunkData
+			dataSize = chunkSize
+		}
+		offset = chunkData + chunkSize
+		if offset%2 == 1 {
+			offset += 1
+		}
+	}
+	if wav.format != 1 || wav.channels != 1 || wav.bitsPerSample != 16 || dataStart < 0 {
+		return wavPCM{}, errors.New("unsupported wav encoding")
+	}
+	wav.data = append([]byte(nil), data[dataStart:dataStart+dataSize]...)
+	return wav, nil
+}
+
+func writePCM16Wav(w io.Writer, spec wavPCM, pcm []byte) error {
+	byteRate := spec.sampleRate * uint32(spec.channels) * uint32(spec.bitsPerSample) / 8
+	blockAlign := spec.channels * spec.bitsPerSample / 8
+	if _, err := w.Write([]byte("RIFF")); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, uint32(36+len(pcm))); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte("WAVEfmt ")); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, uint32(16)); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, spec.format); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, spec.channels); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, spec.sampleRate); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, byteRate); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, blockAlign); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, spec.bitsPerSample); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte("data")); err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, uint32(len(pcm))); err != nil {
+		return err
+	}
+	_, err := w.Write(pcm)
+	return err
+}
+
 func prioritizedAudioPlayers(wavPath string, volume int) []audioPlayer {
 	players := resolveAudioPlayers(wavPath, volume)
 	probe := loadAudioProbe()
-	if probe.Selected == "" || probe.Selected == "bundled-espeak-ng" {
+	if probe.Selected == "" {
 		return players
 	}
 	var preferred []audioPlayer
@@ -954,11 +1134,16 @@ func terminateProcessGroup(cmd *exec.Cmd) {
 }
 
 func detectEngine(cfg Config) string {
-	if fileExists(cfg.Piper.Bin) && fileExists(cfg.Piper.Model) {
-		return "piper"
-	}
-	if resolveEspeakBin(cfg) != "" {
-		return "espeak-ng"
+	if fileExists(cfg.Sherpa.Bin) &&
+		fileExists(cfg.Sherpa.ZhMatchaModel) &&
+		fileExists(cfg.Sherpa.ZhMatchaVocoder) &&
+		fileExists(cfg.Sherpa.ZhMatchaLexicon) &&
+		fileExists(cfg.Sherpa.ZhMatchaTokens) &&
+		fileExists(cfg.Sherpa.EnMatchaModel) &&
+		fileExists(cfg.Sherpa.EnMatchaVocoder) &&
+		fileExists(cfg.Sherpa.EnMatchaTokens) &&
+		dirExists(cfg.Sherpa.EnMatchaDataDir) {
+		return "sherpa-onnx"
 	}
 	return "none"
 }
@@ -974,12 +1159,10 @@ func normalizeVoice(voice string) string {
 
 func healthMessage(engine string) string {
 	switch engine {
-	case "piper":
-		return "Piper engine is available."
-	case "espeak-ng":
-		return "Piper is unavailable; eSpeak NG fallback is available."
+	case "sherpa-onnx":
+		return "Sherpa-onnx Matcha TTS engine is available."
 	default:
-		return "No TTS engine is available. Please reinstall the package or check /opt/wps-read-aloud/engines and /opt/wps-read-aloud/voices."
+		return "No TTS engine is available. Please reinstall the package or check /opt/wps-read-aloud/engines/sherpa-onnx and /opt/wps-read-aloud/voices/sherpa."
 	}
 }
 
@@ -1001,10 +1184,8 @@ func friendlyError(err error) string {
 	switch {
 	case strings.Contains(msg, "no available tts engine"):
 		return "朗读引擎不可用，请重新安装加载项安装包，或联系管理员检查 /opt/wps-read-aloud/engines 和 /opt/wps-read-aloud/voices。"
-	case strings.Contains(msg, "piper failed"):
-		return "Piper 语音引擎启动失败，已记录到系统日志。请联系管理员执行 journalctl -u wps-tts.service -n 80 --no-pager 查看原因。"
-	case strings.Contains(msg, "espeak-ng"):
-		return "备用语音引擎启动失败，已记录到系统日志。请联系管理员检查安装包是否完整。"
+	case strings.Contains(msg, "sherpa-onnx failed"):
+		return "Sherpa-onnx 语音引擎启动失败，已记录到系统日志。请联系管理员执行 journalctl -u wps-tts.service -n 80 --no-pager 查看原因。"
 	case strings.Contains(msg, "no available audio player"):
 		return "系统音频播放器不可用，请确认系统已安装 aplay、pw-play 或 paplay，并检查声卡输出是否正常。"
 	case strings.Contains(msg, "prepare audio file failed"):
@@ -1018,20 +1199,13 @@ func friendlyError(err error) string {
 	}
 }
 
-func resolveEspeakBin(cfg Config) string {
-	if fileExists(cfg.Espeak.Bin) {
-		return cfg.Espeak.Bin
-	}
-	return ""
-}
-
-func runtimeEnv(base []string, libDir string, espeakDataDir string) []string {
+func runtimeEnv(base []string, libDir string, dataDir string) []string {
 	env := append([]string{}, base...)
 	if dirExists(libDir) {
 		env = append(env, "LD_LIBRARY_PATH="+prependEnv(os.Getenv("LD_LIBRARY_PATH"), libDir))
 	}
-	if dirExists(espeakDataDir) {
-		env = append(env, "ESPEAK_DATA_PATH="+espeakDataDir)
+	if dirExists(dataDir) {
+		env = append(env, "ESPEAK_DATA_PATH="+dataDir)
 	}
 	return env
 }
@@ -1069,24 +1243,24 @@ func cleanText(text string) string {
 	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
-func rateToEspeakSpeed(rate float64) int {
+func clampRate(rate float64) float64 {
 	if rate < 0.6 {
-		rate = 0.6
+		return 0.6
 	}
 	if rate > 1.6 {
-		rate = 1.6
+		return 1.6
 	}
-	return int(175 * rate)
+	return rate
 }
 
-func piperLengthScale(rate float64) float64 {
-	if rate < 0.6 {
-		rate = 0.6
+func sherpaNumThreads(numThreads int) int {
+	if numThreads < 1 {
+		return 1
 	}
-	if rate > 1.6 {
-		rate = 1.6
+	if numThreads > 4 {
+		return 4
 	}
-	return 1 / rate
+	return numThreads
 }
 
 func newID() string {
@@ -1144,19 +1318,44 @@ func loadSimpleYAML(path string, cfg *Config) error {
 		switch section + "." + key {
 		case ".listen":
 			cfg.Listen = value
-		case "piper.bin":
-			cfg.Piper.Bin = value
-		case "piper.model":
-			cfg.Piper.Model = value
-		case "espeak.bin":
-			cfg.Espeak.Bin = value
-		case "espeak.voice":
-			cfg.Espeak.Voice = value
-		case "espeak.english_voice":
-			cfg.Espeak.EnglishVoice = value
+		case "sherpa.bin":
+			cfg.Sherpa.Bin = value
+		case "sherpa.num_threads":
+			if parsed, err := strconv.Atoi(value); err == nil {
+				cfg.Sherpa.NumThreads = parsed
+			}
+		case "sherpa.target_sample_rate":
+			if parsed, err := strconv.Atoi(value); err == nil {
+				cfg.Sherpa.TargetSampleRate = parsed
+			}
+		case "sherpa.zh_matcha_model":
+			cfg.Sherpa.ZhMatchaModel = value
+		case "sherpa.zh_matcha_vocoder":
+			cfg.Sherpa.ZhMatchaVocoder = value
+		case "sherpa.zh_matcha_lexicon":
+			cfg.Sherpa.ZhMatchaLexicon = value
+		case "sherpa.zh_matcha_tokens":
+			cfg.Sherpa.ZhMatchaTokens = value
+		case "sherpa.zh_rule_fsts":
+			cfg.Sherpa.ZhRuleFsts = value
+		case "sherpa.en_matcha_model":
+			cfg.Sherpa.EnMatchaModel = value
+		case "sherpa.en_matcha_vocoder":
+			cfg.Sherpa.EnMatchaVocoder = value
+		case "sherpa.en_matcha_tokens":
+			cfg.Sherpa.EnMatchaTokens = value
+		case "sherpa.en_matcha_data_dir":
+			cfg.Sherpa.EnMatchaDataDir = value
 		}
 	}
-	cfg.Piper.Bin = filepath.Clean(cfg.Piper.Bin)
-	cfg.Piper.Model = filepath.Clean(cfg.Piper.Model)
+	cfg.Sherpa.Bin = filepath.Clean(cfg.Sherpa.Bin)
+	cfg.Sherpa.ZhMatchaModel = filepath.Clean(cfg.Sherpa.ZhMatchaModel)
+	cfg.Sherpa.ZhMatchaVocoder = filepath.Clean(cfg.Sherpa.ZhMatchaVocoder)
+	cfg.Sherpa.ZhMatchaLexicon = filepath.Clean(cfg.Sherpa.ZhMatchaLexicon)
+	cfg.Sherpa.ZhMatchaTokens = filepath.Clean(cfg.Sherpa.ZhMatchaTokens)
+	cfg.Sherpa.EnMatchaModel = filepath.Clean(cfg.Sherpa.EnMatchaModel)
+	cfg.Sherpa.EnMatchaVocoder = filepath.Clean(cfg.Sherpa.EnMatchaVocoder)
+	cfg.Sherpa.EnMatchaTokens = filepath.Clean(cfg.Sherpa.EnMatchaTokens)
+	cfg.Sherpa.EnMatchaDataDir = filepath.Clean(cfg.Sherpa.EnMatchaDataDir)
 	return nil
 }

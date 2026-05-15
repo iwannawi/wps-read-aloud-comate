@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PKG_NAME = "wps-read-aloud-zhangjingyao"
-VERSION = os.environ.get("VERSION", "1.0.9")
+VERSION = os.environ.get("VERSION", "1.0.10")
 ARCH = os.environ.get("ARCH", "arm64")
 BUILD = ROOT / "build" / "deb" / f"{PKG_NAME}_{VERSION}_{ARCH}"
 DATA = BUILD / "data"
@@ -22,18 +22,19 @@ EMBEDDED_WEB = ROOT / "daemon" / "cmd" / "wps-tts-daemon" / "web"
 
 REQUIRED = [
     "dist/wps-tts-daemon",
-    "engines/piper/piper",
-    "engines/piper/lib",
-    "engines/espeak-ng/espeak-ng",
-    "engines/espeak-ng/espeak-ng-data",
-    "engines/espeak-ng/lib",
-    "voices/zh_CN.onnx",
-    "voices/zh_CN.onnx.json",
+    "engines/sherpa-onnx/sherpa-onnx-offline-tts",
+    "engines/sherpa-onnx/lib",
+    "voices/sherpa/matcha-icefall-zh-baker/model-steps-3.onnx",
+    "voices/sherpa/matcha-icefall-zh-baker/lexicon.txt",
+    "voices/sherpa/matcha-icefall-zh-baker/tokens.txt",
+    "voices/sherpa/matcha-icefall-en_US-ljspeech/model-steps-3.onnx",
+    "voices/sherpa/matcha-icefall-en_US-ljspeech/tokens.txt",
+    "voices/sherpa/matcha-icefall-en_US-ljspeech/espeak-ng-data",
+    "voices/sherpa/vocos-22khz-univ.onnx",
     "third_party_licenses/THIRD_PARTY_NOTICES.md",
-    "third_party_licenses/PIPER_LICENSE.md",
-    "third_party_licenses/PIPER_VOICES_LICENSE.md",
+    "third_party_licenses/SHERPA_ONNX_LICENSE.md",
+    "third_party_licenses/SHERPA_ONNX_MODELS_LICENSE.md",
     "third_party_licenses/ONNXRUNTIME_LICENSE.txt",
-    "third_party_licenses/ESPEAK_NG_COPYING.txt",
     "RELEASE_NOTES.md",
     "ACCEPTANCE_TEST.md",
     "SOURCE_OFFER.md",
@@ -42,17 +43,15 @@ REQUIRED = [
 
 EXECUTABLE_SUFFIXES = {
     "opt/wps-read-aloud/daemon/wps-tts-daemon",
-    "opt/wps-read-aloud/engines/piper/piper",
-    "opt/wps-read-aloud/engines/espeak-ng/espeak-ng",
+    "opt/wps-read-aloud/engines/sherpa-onnx/sherpa-onnx-offline-tts",
     "usr/bin/wps-read-aloud-register",
 }
 
 DOC_FILES = [
     "THIRD_PARTY_NOTICES.md",
-    "PIPER_LICENSE.md",
-    "PIPER_VOICES_LICENSE.md",
+    "SHERPA_ONNX_LICENSE.md",
+    "SHERPA_ONNX_MODELS_LICENSE.md",
     "ONNXRUNTIME_LICENSE.txt",
-    "ESPEAK_NG_COPYING.txt",
 ]
 
 PROJECT_DOC_FILES = [
@@ -62,15 +61,7 @@ PROJECT_DOC_FILES = [
     "CHECKSUMS.txt",
 ]
 
-DUPLICATE_LIBRARY_LINKS = {
-    "opt/wps-read-aloud/engines/piper/lib/libonnxruntime.so": "libonnxruntime.so.1.14.1",
-    "opt/wps-read-aloud/engines/piper/lib/libpiper_phonemize.so": "libpiper_phonemize.so.1.2.0",
-    "opt/wps-read-aloud/engines/piper/lib/libpiper_phonemize.so.1": "libpiper_phonemize.so.1.2.0",
-    "opt/wps-read-aloud/engines/piper/lib/libespeak-ng.so": "libespeak-ng.so.1.52.0.1",
-    "opt/wps-read-aloud/engines/piper/lib/libespeak-ng.so.1": "libespeak-ng.so.1.52.0.1",
-    "opt/wps-read-aloud/engines/espeak-ng/lib/libespeak-ng.so": "libespeak-ng.so.1.52.0.1",
-    "opt/wps-read-aloud/engines/espeak-ng/lib/libespeak-ng.so.1": "libespeak-ng.so.1.52.0.1",
-}
+DUPLICATE_LIBRARY_LINKS = {}
 
 EXCLUDED_PACKAGE_FILES = {
     "opt/wps-read-aloud/engines/.gitkeep",
@@ -175,7 +166,7 @@ def all_data_names() -> list[str]:
         rel = path.relative_to(DATA).as_posix()
         if rel in EXCLUDED_PACKAGE_FILES:
             continue
-        if rel.endswith("/.gitkeep") or "/__pycache__/" in rel or rel.endswith(".pyc"):
+        if rel.endswith("/.gitkeep") or "/__pycache__/" in rel or rel.endswith(".pyc") or "/._" in rel or rel.startswith("._"):
             continue
         names.append(rel)
     return names
@@ -215,8 +206,10 @@ def main() -> None:
     (DATA / "opt/wps-read-aloud/daemon").mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / "dist" / "wps-tts-daemon", DATA / "opt/wps-read-aloud/daemon/wps-tts-daemon")
     copytree_contents(ROOT / "addin", DATA / "opt/wps-read-aloud/addin")
-    copytree_contents(ROOT / "engines", DATA / "opt/wps-read-aloud/engines")
-    copytree_contents(ROOT / "voices", DATA / "opt/wps-read-aloud/voices")
+    (DATA / "opt/wps-read-aloud/engines").mkdir(parents=True, exist_ok=True)
+    copytree_contents(ROOT / "engines" / "sherpa-onnx", DATA / "opt/wps-read-aloud/engines/sherpa-onnx")
+    (DATA / "opt/wps-read-aloud/voices").mkdir(parents=True, exist_ok=True)
+    copytree_contents(ROOT / "voices" / "sherpa", DATA / "opt/wps-read-aloud/voices/sherpa")
     replace_duplicate_libraries_with_links()
     (DATA / "etc/wps-read-aloud").mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / "daemon" / "config.example.yaml", DATA / "etc/wps-read-aloud/config.yaml")

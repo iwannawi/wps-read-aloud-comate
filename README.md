@@ -18,14 +18,12 @@
 ## 工作方式
 
 ```text
-WPS 文字 -> 文档朗读选项卡 -> http://127.0.0.1:19860 -> Go 服务 -> Piper/eSpeak NG -> 系统播放器播放音频
+WPS 文字 -> 文档朗读选项卡 -> http://127.0.0.1:19860 -> Go 服务 -> Sherpa-onnx Matcha 双模型 -> 系统播放器播放音频
 ```
 
-Piper 是首选中文离线语音引擎，eSpeak NG 是兜底引擎。播放时优先使用已经探测成功的系统播放器；如果还没有探测结果，会依次尝试系统已有的 `pw-play`、`paplay` 或 `aplay`。如果系统播放器不可用，则使用安装包内置的 eSpeak NG 直接播放兜底。所有文本只发送到本机回环地址，不访问外网。
+Sherpa-onnx 是唯一离线语音合成引擎。中文片段使用 `matcha-icefall-zh-baker`，英文片段使用 `matcha-icefall-en_US-ljspeech`，两者共用 `vocos-22khz-univ.onnx` 声码器，原生输出 `22050 Hz` 单声道 WAV。服务会用正则表达式把中英文混合文本切分成片段，分别调用对应模型合成，再把音频无重采样拼接成一段完整音频。播放时优先使用已经探测成功的系统播放器；如果还没有探测结果，会依次尝试系统已有的 `pw-play`、`paplay` 或 `aplay`。所有文本只发送到本机回环地址，不访问外网。
 
 朗读时会按完整语句切分、逐句合成并播放；加载项会在 WPS 文档中选中当前朗读语句，进入下一句时同步选中下一句。顶部选项卡提供“全文朗读、当前位置朗读、选区朗读”三种入口。低配置机器上建议优先使用“选区朗读”或“当前位置朗读”，加载项会限制单次句子数量和单句长度，避免长文档造成长时间等待或资源占用过高。
-
-当前内置中文模型 `voices/zh_CN.onnx` 的质量等级为 `x_low`，适合离线轻量交付，但普通话自然度、英文清晰度和韵律稳定性会受模型质量限制。需要更接近真人普通话效果时，可在保持文件名或配置路径一致的前提下替换为更高质量普通话 Piper 模型。
 
 ## 目录
 
@@ -67,13 +65,11 @@ dist/wps-tts-daemon
 打包前必须准备：
 
 ```text
-engines/piper/piper
-engines/piper/lib/
-engines/espeak-ng/espeak-ng
-engines/espeak-ng/espeak-ng-data/
-engines/espeak-ng/lib/
-voices/zh_CN.onnx
-voices/zh_CN.onnx.json
+engines/sherpa-onnx/sherpa-onnx-offline-tts
+engines/sherpa-onnx/lib/
+voices/sherpa/matcha-icefall-zh-baker/
+voices/sherpa/matcha-icefall-en_US-ljspeech/
+voices/sherpa/vocos-22khz-univ.onnx
 ```
 
 这些文件会被打入 `.deb`，安装到 `/opt/wps-read-aloud/engines` 和 `/opt/wps-read-aloud/voices`。
@@ -91,7 +87,7 @@ python3 packaging/deb/build_deb.py
 最终交付文件：
 
 ```text
-dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+dist/wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 ## 安装
@@ -99,7 +95,7 @@ dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
 在银河麒麟 V10 ARM64 目标机执行：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 安装包会：
@@ -150,8 +146,7 @@ GET /voices
 - `dist/`
 - `engines/`
 - `tools/`
-- `voices/zh_CN.onnx`
-- `voices/zh_CN.onnx.json`
+- `voices/sherpa/`
 - 构建缓存和下载缓存
 
 详细版本管理规则见：

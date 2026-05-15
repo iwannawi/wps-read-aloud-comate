@@ -1,13 +1,13 @@
 # 验收测试说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.9
+版本：1.0.10
 目标环境：银河麒麟 V10 ARM64 + WPS 2023 for Linux
 
 ## 安装测试
 
 ```bash
-sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 预期结果：
@@ -28,7 +28,7 @@ systemctl status wps-tts.service --no-pager
 预期结果：
 
 - 服务状态为 active/running。
-- 点击“状态检查”时，“系统播放器”不应显示为“未检测到”；如果系统没有 `aplay/pw-play/paplay`，应显示 `bundled-espeak-ng`。
+- 点击“状态检查”时，“语音引擎”应显示 Sherpa-onnx；“系统播放器”不应显示为“未检测到”。
 - `/var/lib/wps-read-aloud/audio-player.json` 中应记录当前环境的 `selected` 播放方式和每个播放器的探测结果。
 
 ## WPS 加载项测试
@@ -62,14 +62,14 @@ systemctl status wps-tts.service --no-pager
 - 播放过程中可以暂停、继续、停止。
 - “当前位置朗读”应从当前光标位置或选区起点开始朗读到文档结尾。
 - “朗读语速”菜单包含 `1.0x（默认）`，“朗读音量”菜单包含 `80%（默认）`。
-- 调整音量后，Piper 生成的朗读音量应有明显变化。
+- 调整音量后，Sherpa-onnx 生成的朗读音量应有明显变化。
 - 朗读语速、朗读音量控件应和其他大按钮上下居中，不应明显偏上或过矮。
 - 弹窗不应出现黄色三角叹号图标。
 - 状态检查和关于弹窗应使用统一窗口样式，关于中的说明文件链接可点击打开。
 - 不应出现“WPS 内置浏览器阻止了自动播放”的提示。
 - 不应出现 `Unexpected non-whitespace character after JSON` 这类原始技术错误。
 - 日志中不应出现 `failed to open audio file "/tmp/wps-read-aloud-*.wav": Permission denied`。
-- 如果 `pw-play` 日志出现 `no node available`，服务应继续尝试其他播放器或内置 eSpeak NG 兜底，而不是直接中断朗读。
+- 如果 `pw-play` 日志出现 `no node available`，服务应继续尝试其他播放器，而不是直接中断朗读。
 
 ## 中英文混合朗读测试
 
@@ -83,6 +83,7 @@ systemctl status wps-tts.service --no-pager
 - 中文内容可以朗读。
 - 英文内容可以朗读。
 - 中英文混合句子不会跳过英文。
+- 中文片段应使用 `matcha-icefall-zh-baker`，英文片段应使用 `matcha-icefall-en_US-ljspeech`。
 - 当前朗读语句仍在 WPS 文档中同步选中。
 
 ## 卸载测试

@@ -3,7 +3,7 @@
 目标交付文件：
 
 ```text
-dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+dist/wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 ## 唯一规范打包入口
@@ -34,13 +34,11 @@ Windows 本机兼容入口：
 
 ```text
 dist/wps-tts-daemon
-engines/piper/piper
-engines/piper/lib/
-engines/espeak-ng/espeak-ng
-engines/espeak-ng/espeak-ng-data/
-engines/espeak-ng/lib/
-voices/zh_CN.onnx
-voices/zh_CN.onnx.json
+engines/sherpa-onnx/sherpa-onnx-offline-tts
+engines/sherpa-onnx/lib/
+voices/sherpa/matcha-icefall-zh-baker/
+voices/sherpa/matcha-icefall-en_US-ljspeech/
+voices/sherpa/vocos-22khz-univ.onnx
 ```
 
 `build_deb.py` 会强制校验上述文件，缺任意一项都会失败，避免生成“装得上但不能朗读”的安装包。
@@ -62,7 +60,7 @@ python3 packaging/deb/build_deb.py
 ## 安装
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.9_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.10_arm64.deb
 ```
 
 安装后会：
