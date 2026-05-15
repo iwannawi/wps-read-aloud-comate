@@ -22,7 +22,7 @@ for i in 1 2 3 4 5; do
     cat <&3
   )" 2>/dev/null || health=""
   if echo "${health}" | grep -q '"ok":true' && \
-     echo "${health}" | grep -q '"version":"1.0.6"' && \
+     echo "${health}" | grep -q '"version":"1.0.7"' && \
      ! echo "${health}" | grep -q '"engine":"none"'; then
     echo "wps-read-aloud service health check passed: ${health}"
     health_ok=1
@@ -52,6 +52,19 @@ if [[ "${health_ok}" -eq 1 ]]; then
     echo "Read-aloud may not work until the bundled engine/model issue is fixed."
     echo "Check logs with: journalctl -u wps-tts.service -n 120 --no-pager"
   fi
+fi
+
+audio_probe="$(
+  exec 3<>/dev/tcp/127.0.0.1/19860
+  printf 'POST /audio/probe HTTP/1.0\r\nHost: 127.0.0.1\r\nContent-Length: 0\r\n\r\n' >&3
+  cat <&3
+)" 2>/dev/null || audio_probe=""
+
+if echo "${audio_probe}" | grep -q '"selected":'; then
+  echo "wps-read-aloud audio player probe completed: ${audio_probe}"
+else
+  echo "wps-read-aloud audio player probe did not complete."
+  echo "The service will probe again on first playback if needed."
 fi
 
 echo "wps-read-aloud installed. Developer: zhangjingyao. Release date: 20260515."

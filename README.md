@@ -21,7 +21,7 @@
 WPS 文字 -> 文档朗读选项卡 -> http://127.0.0.1:19860 -> Go 服务 -> Piper/eSpeak NG -> 系统播放器播放音频
 ```
 
-Piper 是首选中文离线语音引擎，eSpeak NG 是兜底引擎。播放时优先使用系统已有的 `pw-play`、`paplay` 或 `aplay`；如果纯净系统没有这些播放器，则使用安装包内置的 eSpeak NG 直接播放兜底。所有文本只发送到本机回环地址，不访问外网。
+Piper 是首选中文离线语音引擎，eSpeak NG 是兜底引擎。播放时优先使用已经探测成功的系统播放器；如果还没有探测结果，会依次尝试系统已有的 `pw-play`、`paplay` 或 `aplay`。如果系统播放器不可用，则使用安装包内置的 eSpeak NG 直接播放兜底。所有文本只发送到本机回环地址，不访问外网。
 
 朗读时会按完整语句切分、逐句合成并播放；加载项会在 WPS 文档中选中当前朗读语句，进入下一句时同步选中下一句。低配置机器上建议优先使用“朗读选区”，加载项会限制单次句子数量和单句长度，避免长文档造成长时间等待或资源占用过高。
 
@@ -89,7 +89,7 @@ python3 packaging/deb/build_deb.py
 最终交付文件：
 
 ```text
-dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
+dist/wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
 ```
 
 ## 安装
@@ -97,7 +97,7 @@ dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
 在银河麒麟 V10 ARM64 目标机执行：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
 ```
 
 安装包会：
@@ -106,6 +106,7 @@ sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
 - 安装 `/etc/wps-read-aloud/config.yaml`
 - 安装并启动系统服务 `wps-tts.service`
 - 覆盖升级时重启 `wps-tts.service`，避免 WPS 加载项与旧版后台服务不匹配
+- 安装时探测当前环境可用播放器，并保存到 `/var/lib/wps-read-aloud/audio-player.json`
 - 为已有普通用户注册 WPS JS 加载项
 - 写入安装日志 `/var/log/wps-read-aloud-install.log`
 - 安装第三方组件许可证和交付说明到 `/usr/share/doc/wps-read-aloud-zhangjingyao/`
@@ -127,6 +128,8 @@ curl http://127.0.0.1:19860/selftest
 ```http
 GET /health
 GET /selftest
+GET /audio/probe
+POST /audio/probe
 POST /play
 POST /synthesize
 POST /speak

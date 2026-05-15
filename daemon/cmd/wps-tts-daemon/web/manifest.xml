@@ -4,7 +4,7 @@
     name="wps-read-aloud"
     type="wps"
     url="index.html"
-    version="1.0.6"
+    version="1.0.7"
     desc="WPS offline read-aloud add-in. Developer: zhangjingyao. Release date: 20260515.">
     <author name="zhangjingyao" email="zhangjingyao@example.invalid"/>
     <ribbon file="ribbon.xml"/>

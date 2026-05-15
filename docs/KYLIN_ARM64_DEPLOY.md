@@ -12,7 +12,7 @@
 企业交付优先使用 `.deb`：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.7_arm64.deb
 ```
 
 安装后会自动：

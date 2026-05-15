@@ -397,7 +397,9 @@
         return;
       }
       if (health.ok) {
-        notify("本地朗读服务正常。\n服务版本：" + health.version + "\n当前引擎：" + health.engine + "\n系统播放器：" + (health.audio_player || "未检测到"));
+        var probe = health.audio_probe || {};
+        var probeInfo = probe.probed_at ? "\n探测时间：" + probe.probed_at : "";
+        notify("本地朗读服务正常。\n服务版本：" + health.version + "\n当前引擎：" + health.engine + "\n当前播放器：" + (health.audio_player || "未检测到") + probeInfo);
       } else {
         notify("本地朗读服务已启动，但语音引擎不可用。请联系管理员重新安装。");
       }
@@ -411,7 +413,7 @@
       "WPS 文档朗读加载项",
       "开发者：zhangjingyao",
       "发布时间：20260515",
-      "版本：1.0.6",
+      "版本：1.0.7",
       "服务地址：127.0.0.1:19860",
       "",
       "说明文件：",

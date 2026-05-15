@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"embed"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -28,7 +29,9 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.6"
+const AppVersion = "1.0.7"
+
+const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 
 type Config struct {
 	Listen string
@@ -76,6 +79,21 @@ type audioPlayer struct {
 	credential bool
 }
 
+type audioProbeResult struct {
+	Version     string           `json:"version"`
+	Selected    string           `json:"selected"`
+	SelectedBin string           `json:"selected_bin,omitempty"`
+	ProbedAt    string           `json:"probed_at"`
+	Results     []audioProbeItem `json:"results"`
+}
+
+type audioProbeItem struct {
+	Name    string `json:"name"`
+	Bin     string `json:"bin,omitempty"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
 func main() {
 	configPath := flag.String("config", "/etc/wps-read-aloud/config.yaml", "config file path")
 	flag.Parse()
@@ -89,6 +107,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", server.health)
 	mux.HandleFunc("/selftest", server.selftest)
+	mux.HandleFunc("/audio/probe", server.audioProbe)
 	mux.HandleFunc("/voices", server.voices)
 	mux.HandleFunc("/play", server.play)
 	mux.HandleFunc("/speak", server.speak)
@@ -128,9 +147,12 @@ func defaultConfig() Config {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	engine := detectEngine(s.cfg)
-	players := resolveAudioPlayers("", 80)
+	probe := loadAudioProbe()
+	players := prioritizedAudioPlayers("", 80)
 	playerName := ""
-	if len(players) > 0 {
+	if probe.Selected != "" {
+		playerName = probe.Selected
+	} else if len(players) > 0 {
 		playerName = filepath.Base(players[0].bin)
 	} else if resolveEspeakBin(s.cfg) != "" {
 		playerName = "bundled-espeak-ng"
@@ -140,8 +162,22 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 		"version":      AppVersion,
 		"engine":       engine,
 		"audio_player": playerName,
+		"audio_probe":  probe,
 		"message":      healthMessage(engine),
 	})
+}
+
+func (s *Server) audioProbe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	result := s.probeAudioPlayers(r.Context())
+	status := http.StatusOK
+	if result.Selected == "" {
+		status = http.StatusInternalServerError
+	}
+	writeJSON(w, status, result)
 }
 
 func (s *Server) selftest(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +342,7 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 
 	var wavPath string
 	var err error
-	if len(resolveAudioPlayers("", req.Volume)) == 0 {
+	if loadAudioProbe().Selected == "bundled-espeak-ng" || len(prioritizedAudioPlayers("", req.Volume)) == 0 {
 		err = s.speakDirect(ctx, group, req)
 	} else {
 		wavPath, err = s.synthesizeSpeech(ctx, group, req)
@@ -314,7 +350,16 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 	if err == nil && wavPath != "" {
 		err = s.playAudio(ctx, group, wavPath, req.Volume)
 		if err != nil {
-			log.Printf("system audio playback failed; trying bundled eSpeak fallback: %v", err)
+			log.Printf("system audio playback failed; re-probing audio players: %v", err)
+			probe := s.probeAudioPlayers(context.Background())
+			if probe.Selected == "bundled-espeak-ng" {
+				err = s.speakDirect(ctx, group, req)
+			} else {
+				err = s.playAudio(ctx, group, wavPath, req.Volume)
+			}
+		}
+		if err != nil {
+			log.Printf("system audio playback still failed; trying bundled eSpeak fallback: %v", err)
 			err = s.speakDirect(ctx, group, req)
 		}
 	}
@@ -456,29 +501,13 @@ func (s *Server) runEspeak(ctx context.Context, group *processGroup, req SpeakRe
 
 func (s *Server) playAudio(ctx context.Context, group *processGroup, wavPath string, volume int) error {
 	_ = volume
-	players := resolveAudioPlayers(wavPath, volume)
+	players := prioritizedAudioPlayers(wavPath, volume)
 	if len(players) == 0 {
 		return errors.New("no available audio player")
 	}
 	var failures []string
 	for _, player := range players {
-		if err := prepareAudioFileForPlayer(wavPath, player); err != nil {
-			failures = append(failures, filepath.Base(player.bin)+": prepare failed: "+err.Error())
-			continue
-		}
-		cmd := exec.CommandContext(ctx, player.bin, player.args...)
-		if len(player.env) > 0 {
-			cmd.Env = append(os.Environ(), player.env...)
-		}
-		if player.credential {
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				Credential: &syscall.Credential{Uid: player.uid, Gid: player.gid},
-			}
-		}
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		startProcess(group, cmd)
-		if err := cmd.Run(); err != nil {
+		if err := runAudioPlayer(ctx, group, wavPath, player); err != nil {
 			failures = append(failures, filepath.Base(player.bin)+": "+err.Error())
 			log.Printf("audio player %s failed: %v", filepath.Base(player.bin), err)
 			continue
@@ -486,6 +515,25 @@ func (s *Server) playAudio(ctx context.Context, group *processGroup, wavPath str
 		return nil
 	}
 	return fmt.Errorf("audio playback failed: %s", strings.Join(failures, "; "))
+}
+
+func runAudioPlayer(ctx context.Context, group *processGroup, wavPath string, player audioPlayer) error {
+	if err := prepareAudioFileForPlayer(wavPath, player); err != nil {
+		return fmt.Errorf("prepare failed: %w", err)
+	}
+	cmd := exec.CommandContext(ctx, player.bin, player.args...)
+	if len(player.env) > 0 {
+		cmd.Env = append(os.Environ(), player.env...)
+	}
+	if player.credential {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{Uid: player.uid, Gid: player.gid},
+		}
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	startProcess(group, cmd)
+	return cmd.Run()
 }
 
 func prepareAudioFileForPlayer(wavPath string, player audioPlayer) error {
@@ -518,6 +566,160 @@ func (s *Server) speakDirect(ctx context.Context, group *processGroup, req Speak
 		return fmt.Errorf("audio playback failed: %w", err)
 	}
 	return nil
+}
+
+func (s *Server) probeAudioPlayers(parent context.Context) audioProbeResult {
+	result := audioProbeResult{
+		Version:  AppVersion,
+		ProbedAt: time.Now().Format(time.RFC3339),
+	}
+	wavPath, err := createProbeWav()
+	if err != nil {
+		result.Results = append(result.Results, audioProbeItem{Name: "probe-wav", Status: "failed", Message: err.Error()})
+		_ = saveAudioProbe(result)
+		return result
+	}
+	defer os.Remove(wavPath)
+
+	for _, player := range resolveAudioPlayers(wavPath, 80) {
+		name := filepath.Base(player.bin)
+		ctx, cancel := context.WithTimeout(parent, 6*time.Second)
+		group := &processGroup{id: "audio-probe-" + name, cancel: cancel}
+		err := runAudioPlayer(ctx, group, wavPath, player)
+		cancel()
+		if err != nil {
+			log.Printf("audio probe %s failed: %v", name, err)
+			result.Results = append(result.Results, audioProbeItem{
+				Name:    name,
+				Bin:     player.bin,
+				Status:  "failed",
+				Message: err.Error(),
+			})
+			continue
+		}
+		result.Results = append(result.Results, audioProbeItem{
+			Name:   name,
+			Bin:    player.bin,
+			Status: "ok",
+		})
+		result.Selected = name
+		result.SelectedBin = player.bin
+		break
+	}
+	if result.Selected == "" && resolveEspeakBin(s.cfg) != "" {
+		result.Selected = "bundled-espeak-ng"
+		result.SelectedBin = resolveEspeakBin(s.cfg)
+		result.Results = append(result.Results, audioProbeItem{
+			Name:    "bundled-espeak-ng",
+			Bin:     result.SelectedBin,
+			Status:  "fallback",
+			Message: "system audio players were unavailable; bundled eSpeak NG will be used as fallback",
+		})
+	}
+	if err := saveAudioProbe(result); err != nil {
+		log.Printf("save audio probe failed: %v", err)
+	}
+	return result
+}
+
+func createProbeWav() (string, error) {
+	tmp, err := os.CreateTemp("", "wps-read-aloud-probe-*.wav")
+	if err != nil {
+		return "", err
+	}
+	defer tmp.Close()
+
+	const sampleRate = 8000
+	const channels = 1
+	const bitsPerSample = 16
+	const samples = sampleRate / 5
+	dataSize := samples * channels * bitsPerSample / 8
+
+	if _, err := tmp.Write([]byte("RIFF")); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint32(36+dataSize)); err != nil {
+		return "", err
+	}
+	if _, err := tmp.Write([]byte("WAVEfmt ")); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint32(16)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint16(1)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint16(channels)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint32(sampleRate)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint32(sampleRate*channels*bitsPerSample/8)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint16(channels*bitsPerSample/8)); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint16(bitsPerSample)); err != nil {
+		return "", err
+	}
+	if _, err := tmp.Write([]byte("data")); err != nil {
+		return "", err
+	}
+	if err := binary.Write(tmp, binary.LittleEndian, uint32(dataSize)); err != nil {
+		return "", err
+	}
+	if _, err := tmp.Write(make([]byte, dataSize)); err != nil {
+		return "", err
+	}
+	return tmp.Name(), nil
+}
+
+func loadAudioProbe() audioProbeResult {
+	var result audioProbeResult
+	data, err := os.ReadFile(audioProbePath)
+	if err != nil {
+		return result
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return audioProbeResult{}
+	}
+	if result.Version != AppVersion {
+		return audioProbeResult{}
+	}
+	return result
+}
+
+func saveAudioProbe(result audioProbeResult) error {
+	if err := os.MkdirAll(filepath.Dir(audioProbePath), 0o755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(audioProbePath, append(data, '\n'), 0o644)
+}
+
+func prioritizedAudioPlayers(wavPath string, volume int) []audioPlayer {
+	players := resolveAudioPlayers(wavPath, volume)
+	probe := loadAudioProbe()
+	if probe.Selected == "" || probe.Selected == "bundled-espeak-ng" {
+		return players
+	}
+	var preferred []audioPlayer
+	var others []audioPlayer
+	for _, player := range players {
+		name := filepath.Base(player.bin)
+		if name == probe.Selected || player.bin == probe.SelectedBin {
+			preferred = append(preferred, player)
+		} else {
+			others = append(others, player)
+		}
+	}
+	return append(preferred, others...)
 }
 
 func resolveAudioPlayers(wavPath string, volume int) []audioPlayer {
