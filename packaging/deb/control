@@ -1,5 +1,5 @@
 Package: wps-read-aloud-zhangjingyao
-Version: 1.0.5
+Version: 1.0.6
 Section: utils
 Priority: optional
 Architecture: arm64

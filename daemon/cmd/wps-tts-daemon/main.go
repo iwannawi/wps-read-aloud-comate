@@ -28,7 +28,7 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.5"
+const AppVersion = "1.0.6"
 
 type Config struct {
 	Listen string
@@ -128,10 +128,10 @@ func defaultConfig() Config {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	engine := detectEngine(s.cfg)
-	player := resolveAudioPlayer("", 80)
+	players := resolveAudioPlayers("", 80)
 	playerName := ""
-	if player.bin != "" {
-		playerName = filepath.Base(player.bin)
+	if len(players) > 0 {
+		playerName = filepath.Base(players[0].bin)
 	} else if resolveEspeakBin(s.cfg) != "" {
 		playerName = "bundled-espeak-ng"
 	}
@@ -304,16 +304,19 @@ func (s *Server) play(w http.ResponseWriter, r *http.Request) {
 	s.current = group
 	s.mu.Unlock()
 
-	player := resolveAudioPlayer("", req.Volume)
 	var wavPath string
 	var err error
-	if player.bin == "" {
+	if len(resolveAudioPlayers("", req.Volume)) == 0 {
 		err = s.speakDirect(ctx, group, req)
 	} else {
 		wavPath, err = s.synthesizeSpeech(ctx, group, req)
 	}
 	if err == nil && wavPath != "" {
 		err = s.playAudio(ctx, group, wavPath, req.Volume)
+		if err != nil {
+			log.Printf("system audio playback failed; trying bundled eSpeak fallback: %v", err)
+			err = s.speakDirect(ctx, group, req)
+		}
 	}
 	s.mu.Lock()
 	if s.current == group {
@@ -453,29 +456,36 @@ func (s *Server) runEspeak(ctx context.Context, group *processGroup, req SpeakRe
 
 func (s *Server) playAudio(ctx context.Context, group *processGroup, wavPath string, volume int) error {
 	_ = volume
-	player := resolveAudioPlayer(wavPath, volume)
-	if player.bin == "" {
+	players := resolveAudioPlayers(wavPath, volume)
+	if len(players) == 0 {
 		return errors.New("no available audio player")
 	}
-	if err := prepareAudioFileForPlayer(wavPath, player); err != nil {
-		return fmt.Errorf("prepare audio file failed: %w", err)
-	}
-	cmd := exec.CommandContext(ctx, player.bin, player.args...)
-	if len(player.env) > 0 {
-		cmd.Env = append(os.Environ(), player.env...)
-	}
-	if player.credential {
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{Uid: player.uid, Gid: player.gid},
+	var failures []string
+	for _, player := range players {
+		if err := prepareAudioFileForPlayer(wavPath, player); err != nil {
+			failures = append(failures, filepath.Base(player.bin)+": prepare failed: "+err.Error())
+			continue
 		}
+		cmd := exec.CommandContext(ctx, player.bin, player.args...)
+		if len(player.env) > 0 {
+			cmd.Env = append(os.Environ(), player.env...)
+		}
+		if player.credential {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Credential: &syscall.Credential{Uid: player.uid, Gid: player.gid},
+			}
+		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		startProcess(group, cmd)
+		if err := cmd.Run(); err != nil {
+			failures = append(failures, filepath.Base(player.bin)+": "+err.Error())
+			log.Printf("audio player %s failed: %v", filepath.Base(player.bin), err)
+			continue
+		}
+		return nil
 	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	startProcess(group, cmd)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("audio playback failed: %w", err)
-	}
-	return nil
+	return fmt.Errorf("audio playback failed: %s", strings.Join(failures, "; "))
 }
 
 func prepareAudioFileForPlayer(wavPath string, player audioPlayer) error {
@@ -510,36 +520,44 @@ func (s *Server) speakDirect(ctx context.Context, group *processGroup, req Speak
 	return nil
 }
 
-func resolveAudioPlayer(wavPath string, volume int) audioPlayer {
+func resolveAudioPlayers(wavPath string, volume int) []audioPlayer {
 	_ = volume
+	var players []audioPlayer
 	for _, session := range audioSessions() {
 		if session.pipewire && commandExists("pw-play") {
-			return audioPlayer{
+			players = append(players, audioPlayer{
 				bin:        mustLookPath("pw-play"),
 				args:       []string{wavPath},
-				env:        []string{"XDG_RUNTIME_DIR=" + session.runtimeDir},
+				env:        audioSessionEnv(session),
 				uid:        session.uid,
 				gid:        session.gid,
 				credential: os.Geteuid() == 0,
-			}
+			})
 		}
 		if session.pulse && commandExists("paplay") {
-			return audioPlayer{
+			players = append(players, audioPlayer{
 				bin:        mustLookPath("paplay"),
 				args:       []string{wavPath},
-				env:        []string{"XDG_RUNTIME_DIR=" + session.runtimeDir, "PULSE_SERVER=unix:" + filepath.Join(session.runtimeDir, "pulse/native")},
+				env:        append(audioSessionEnv(session), "PULSE_SERVER=unix:"+filepath.Join(session.runtimeDir, "pulse/native")),
 				uid:        session.uid,
 				gid:        session.gid,
 				credential: os.Geteuid() == 0,
-			}
+			})
 		}
 	}
 	for _, candidate := range []string{"/usr/bin/aplay", "/bin/aplay", "aplay"} {
 		if bin := resolveCommand(candidate); bin != "" {
-			return audioPlayer{bin: bin, args: []string{"-q", wavPath}}
+			players = append(players, audioPlayer{bin: bin, args: []string{"-q", wavPath}})
 		}
 	}
-	return audioPlayer{}
+	return players
+}
+
+func audioSessionEnv(session audioSession) []string {
+	return []string{
+		"XDG_RUNTIME_DIR=" + session.runtimeDir,
+		"DBUS_SESSION_BUS_ADDRESS=unix:path=" + filepath.Join(session.runtimeDir, "bus"),
+	}
 }
 
 type audioSession struct {

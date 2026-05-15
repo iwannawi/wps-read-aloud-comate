@@ -1,13 +1,13 @@
 # 验收测试说明
 
 软件包：wps-read-aloud-zhangjingyao
-版本：1.0.5
+版本：1.0.6
 目标环境：银河麒麟 V10 ARM64 + WPS 2023 for Linux
 
 ## 安装测试
 
 ```bash
-sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.5_arm64.deb
+sudo dpkg -i wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
 ```
 
 预期结果：
@@ -61,6 +61,7 @@ systemctl status wps-tts.service --no-pager
 - 不应出现“WPS 内置浏览器阻止了自动播放”的提示。
 - 不应出现 `Unexpected non-whitespace character after JSON` 这类原始技术错误。
 - 日志中不应出现 `failed to open audio file "/tmp/wps-read-aloud-*.wav": Permission denied`。
+- 如果 `pw-play` 日志出现 `no node available`，服务应继续尝试其他播放器或内置 eSpeak NG 兜底，而不是直接中断朗读。
 
 ## 中英文混合朗读测试
 

@@ -89,7 +89,7 @@ python3 packaging/deb/build_deb.py
 最终交付文件：
 
 ```text
-dist/wps-read-aloud-zhangjingyao_1.0.5_arm64.deb
+dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
 ```
 
 ## 安装
@@ -97,7 +97,7 @@ dist/wps-read-aloud-zhangjingyao_1.0.5_arm64.deb
 在银河麒麟 V10 ARM64 目标机执行：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.5_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-zhangjingyao_1.0.6_arm64.deb
 ```
 
 安装包会：
