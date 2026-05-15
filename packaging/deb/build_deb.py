@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PKG_NAME = "wps-read-aloud-zhangjingyao"
-VERSION = os.environ.get("VERSION", "1.0.8")
+VERSION = os.environ.get("VERSION", "1.0.9")
 ARCH = os.environ.get("ARCH", "arm64")
 BUILD = ROOT / "build" / "deb" / f"{PKG_NAME}_{VERSION}_{ARCH}"
 DATA = BUILD / "data"

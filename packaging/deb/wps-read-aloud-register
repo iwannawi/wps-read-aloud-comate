@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ADDIN_NAME="wps-read-aloud"
-ADDIN_VERSION="1.0.8"
+ADDIN_VERSION="1.0.9"
 DEVELOPER="zhangjingyao"
 RELEASE_DATE="20260515"
 ADDIN_DIR="/opt/wps-read-aloud/addin"

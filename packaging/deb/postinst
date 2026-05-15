@@ -22,7 +22,7 @@ for i in 1 2 3 4 5; do
     cat <&3
   )" 2>/dev/null || health=""
   if echo "${health}" | grep -q '"ok":true' && \
-     echo "${health}" | grep -q '"version":"1.0.8"' && \
+     echo "${health}" | grep -q '"version":"1.0.9"' && \
      ! echo "${health}" | grep -q '"engine":"none"'; then
     echo "wps-read-aloud service health check passed: ${health}"
     health_ok=1

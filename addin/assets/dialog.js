@@ -37,8 +37,9 @@
     document.getElementById("dialogMessage").textContent = payload.message || "";
 
     var icon = document.getElementById("dialogIcon");
-    icon.className = "dialog-icon " + (payload.variant || "info");
-    icon.textContent = payload.variant === "success" ? "✓" : payload.variant === "warning" ? "!" : payload.variant === "error" ? "×" : "i";
+    var variant = payload.variant === "warning" ? "info" : (payload.variant || "info");
+    icon.className = "dialog-icon " + variant;
+    icon.textContent = variant === "success" ? "✓" : variant === "error" ? "×" : "i";
 
     var fields = payload.fields || [];
     if (fields.length) {

@@ -29,7 +29,7 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.8"
+const AppVersion = "1.0.9"
 
 const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 
@@ -464,7 +464,16 @@ func (s *Server) runPiper(ctx context.Context, group *processGroup, req SpeakReq
 	tmp.Close()
 
 	lengthScale := fmt.Sprintf("%.2f", piperLengthScale(req.Rate))
-	cmd := exec.CommandContext(ctx, s.cfg.Piper.Bin, "--model", s.cfg.Piper.Model, "--length_scale", lengthScale, "--output_file", tmpPath)
+	cmd := exec.CommandContext(
+		ctx,
+		s.cfg.Piper.Bin,
+		"--model", s.cfg.Piper.Model,
+		"--length_scale", lengthScale,
+		"--noise_scale", "0.333",
+		"--noise_w", "0.5",
+		"--sentence_silence", "0.08",
+		"--output_file", tmpPath,
+	)
 	cmd.Env = runtimeEnv(os.Environ(), filepath.Join(filepath.Dir(s.cfg.Piper.Bin), "lib"), filepath.Join(filepath.Dir(s.cfg.Espeak.Bin), "espeak-ng-data"))
 	cmd.Stdin = strings.NewReader(req.Text)
 	cmd.Stdout = os.Stdout
@@ -774,6 +783,7 @@ func applyWavVolume(path string, volume int) error {
 
 func normalizeMandarinText(text string) string {
 	replacer := strings.NewReplacer(
+		"　", " ",
 		"0", "零",
 		"1", "一",
 		"2", "二",
@@ -788,7 +798,9 @@ func normalizeMandarinText(text string) string {
 		"℃", "摄氏度",
 		"&", "和",
 	)
-	return strings.TrimSpace(replacer.Replace(text))
+	text = replacer.Replace(text)
+	text = strings.Join(strings.Fields(text), " ")
+	return strings.TrimSpace(text)
 }
 
 func prioritizedAudioPlayers(wavPath string, volume int) []audioPlayer {

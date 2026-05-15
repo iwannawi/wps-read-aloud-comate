@@ -88,6 +88,8 @@
       pauseSpeak: "assets/icons/pause.png",
       resumeSpeak: "assets/icons/play.png",
       stopSpeak: "assets/icons/stop.png",
+      rateMenu: "assets/icons/rate.png",
+      volumeMenu: "assets/icons/volume.png",
       checkStatus: "assets/icons/status.png",
       aboutAddin: "assets/icons/about.png"
     };
@@ -522,7 +524,7 @@
       fields: [
         { label: "开发者", value: "zhangjingyao" },
         { label: "发布时间", value: "20260515" },
-        { label: "版本", value: "1.0.8" },
+        { label: "版本", value: "1.0.9" },
         { label: "服务地址", value: "127.0.0.1:19860" }
       ],
       links: [
@@ -582,6 +584,14 @@
       checkStatus: onCheckStatus,
       aboutAddin: onAbout
     };
+    if (/^rate/.test(id)) {
+      onRateChanged(control, id);
+      return;
+    }
+    if (/^volume/.test(id)) {
+      onVolumeChanged(control, id);
+      return;
+    }
     if (actions[id]) {
       actions[id]();
       return;
