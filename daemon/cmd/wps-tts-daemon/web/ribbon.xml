@@ -3,24 +3,21 @@
   <ribbon>
     <tabs>
       <tab id="wpsReadAloudTab" label="文档朗读">
-        <group id="readGroup" label="朗读">
-          <button id="speakDocument" label="全文朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="全文朗读" supertip="从文档开头按完整语句朗读全文，并同步选中当前语句。"/>
-          <button id="speakFromCursor" label="当前位置朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="当前位置朗读" supertip="从当前光标位置或选区起点开始朗读到文档结尾。"/>
-          <button id="speakSelection" label="选区朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="选区朗读" supertip="按完整语句朗读当前选中的文字，并同步选中文档中的当前语句。"/>
+        <group id="readControlGroup" label="朗读控制">
+          <button id="startSpeak" label="开始朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="开始朗读" supertip="按当前朗读模式从光标位置或文档起点开始朗读。"/>
+          <button id="stopSpeak" label="停止朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="停止朗读" supertip="停止当前朗读任务。"/>
         </group>
-        <group id="controlGroup" label="播放控制">
-          <button id="pauseSpeak" label="暂停朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="暂停朗读" supertip="暂停当前朗读。"/>
-          <button id="resumeSpeak" label="继续朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="继续朗读" supertip="继续当前朗读。"/>
-          <button id="stopSpeak" label="停止朗读" size="large" getImage="ribbon.GetImage" onAction="ribbon.OnAction" screentip="停止朗读" supertip="停止当前朗读。"/>
+        <group id="readModeGroup" label="朗读范围">
+          <toggleButton id="modeContinuous" getLabel="ribbon.GetLabel" size="large" getImage="ribbon.GetImage" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction" screentip="连页朗读" supertip="默认模式。从当前光标处朗读到文档末尾；没有光标时从文档开头朗读。"/>
+          <toggleButton id="modePage" getLabel="ribbon.GetLabel" size="large" getImage="ribbon.GetImage" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction" screentip="当页朗读" supertip="从当前光标处朗读到当前页末尾；没有光标时从当前页开头朗读到当前页末尾。"/>
         </group>
         <group id="settingGroup" label="朗读设置">
-          <menu id="rateMenu" getLabel="ribbon.GetLabel" size="large" getImage="ribbon.GetImage" screentip="朗读语速" supertip="选择朗读语速，默认 1.0x。">
-            <toggleButton id="rate06" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
-            <toggleButton id="rate08" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
-            <toggleButton id="rate10" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
-            <toggleButton id="rate12" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
-            <toggleButton id="rate14" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
-            <toggleButton id="rate16" getLabel="ribbon.GetLabel" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
+          <menu id="rateMenu" getLabel="ribbon.GetLabel" size="large" getImage="ribbon.GetImage" screentip="朗读语速" supertip="选择朗读语速，默认 1x。">
+            <button id="rate05" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <button id="rate075" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <button id="rate10" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <button id="rate15" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <button id="rate20" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
           </menu>
         </group>
         <group id="serviceGroup" label="服务">

@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  function fromBase64(text) {
+  function fromBase64(value) {
     try {
-      return decodeURIComponent(escape(atob(text || "")));
+      return decodeURIComponent(escape(atob(value || "")));
     } catch (_) {
       return "{}";
     }
@@ -35,11 +35,6 @@
     document.title = payload.title || "文档朗读";
     document.getElementById("dialogTitle").textContent = payload.title || "文档朗读";
     document.getElementById("dialogMessage").textContent = payload.message || "";
-
-    var icon = document.getElementById("dialogIcon");
-    var variant = payload.variant === "warning" ? "info" : (payload.variant || "info");
-    icon.className = "dialog-icon " + variant;
-    icon.textContent = variant === "success" ? "✓" : variant === "error" ? "×" : "i";
 
     var fields = payload.fields || [];
     if (fields.length) {

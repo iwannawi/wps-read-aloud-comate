@@ -6,14 +6,24 @@
   var MAX_SENTENCES = 1000;
   var MAX_SENTENCE_LENGTH = 1000;
   var SENTENCE_END = /[。！？!?；;]+|[\r\n]+/g;
+  var WD_GO_TO_PAGE = 1;
+  var WD_GO_TO_ABSOLUTE = 1;
+  var WD_ACTIVE_END_PAGE_NUMBER = 3;
 
   var rate = 1.0;
-  var currentAbortController = null;
+  var readMode = "continuous";
   var playbackToken = 0;
   var isReading = false;
-  var isPaused = false;
   var lastActionAt = 0;
   var lastSelectedIndex = -1;
+
+  var RATE_OPTIONS = [
+    { id: "rate05", value: 0.5, label: "0.5x" },
+    { id: "rate075", value: 0.75, label: "0.75x" },
+    { id: "rate10", value: 1.0, label: "1x" },
+    { id: "rate15", value: 1.5, label: "1.5x" },
+    { id: "rate20", value: 2.0, label: "2x" }
+  ];
 
   function notify(message, title, variant) {
     showDialog({
@@ -26,8 +36,23 @@
   function showDialog(options) {
     var payload = encodeURIComponent(toBase64(JSON.stringify(options || {})));
     var url = SERVICE_BASE + "/dialog.html?payload=" + payload;
+    var title = options && options.title ? options.title : "文档朗读";
+
     try {
-      var popup = window.open(url, "wpsReadAloudDialog", "width=760,height=520,resizable=yes,scrollbars=no");
+      if (window.wps && typeof window.wps.ShowDialog === "function") {
+        window.wps.ShowDialog(url, title, 880, 680, false);
+        return;
+      }
+      if (window.Application && typeof window.Application.ShowDialog === "function") {
+        window.Application.ShowDialog(url, title, 880, 680, false);
+        return;
+      }
+    } catch (_) {
+      // Continue to window.open below.
+    }
+
+    try {
+      var popup = window.open(url, "wpsReadAloudDialog", "width=880,height=680,resizable=yes,scrollbars=yes");
       if (popup && typeof popup.focus === "function") {
         popup.focus();
         return;
@@ -71,6 +96,9 @@
 
   function status(message) {
     console.log("[wps-read-aloud] " + message);
+    try {
+      getWpsApplication().StatusBar = message;
+    } catch (_) {}
   }
 
   function controlId(control) {
@@ -82,17 +110,15 @@
 
   function onGetImage(control) {
     var icons = {
-      speakSelection: "assets/icons/read-selection.png",
-      speakFromCursor: "assets/icons/read-current.png",
-      speakDocument: "assets/icons/read-document.png",
-      pauseSpeak: "assets/icons/pause.png",
-      resumeSpeak: "assets/icons/play.png",
+      startSpeak: "assets/icons/start.png",
       stopSpeak: "assets/icons/stop.png",
+      modeContinuous: "assets/icons/continuous.png",
+      modePage: "assets/icons/page.png",
       rateMenu: "assets/icons/rate.png",
       checkStatus: "assets/icons/status.png",
       aboutAddin: "assets/icons/about.png"
     };
-    return icons[controlId(control)] || "assets/icons/read-selection.png";
+    return icons[controlId(control)] || "assets/icons/start.png";
   }
 
   function userMessage(error) {
@@ -108,18 +134,15 @@
     if (/Failed to fetch|NetworkError|Load failed|fetch/i.test(raw)) {
       return "本地朗读服务未连接，请确认安装已完成并重启 WPS。";
     }
-    if (/NotAllowedError|play\(\)|user.*interact/i.test(raw)) {
-      return "WPS 内置浏览器阻止了音频播放。请升级到使用系统播放接口的最新安装包后重试。";
-    }
     if (/AbortError|aborted|timeout/i.test(raw)) {
-      return "朗读合成超时，请缩短选中文本后重试。";
+      return "朗读合成超时，请缩短选区或稍后重试。";
     }
     return raw || "操作失败，请稍后重试。";
   }
 
   function throttleAction() {
     var now = Date.now();
-    if (now - lastActionAt < 500) {
+    if (now - lastActionAt < 450) {
       status("操作过快，请稍等。");
       return true;
     }
@@ -145,64 +168,103 @@
       .trim();
   }
 
-  function readSelectionSource() {
-    var app = getWpsApplication();
-    var selection = app.Selection;
-    if (!selection) {
-      return { text: "", start: 0 };
-    }
-    var range = selection.Range || selection;
-    return {
-      text: range.Text !== undefined ? String(range.Text || "") : "",
-      start: range.Start !== undefined ? Number(range.Start) : 0
-    };
-  }
-
-  function readDocumentSource() {
+  function activeDocument() {
     var app = getWpsApplication();
     var doc = app.ActiveDocument;
     if (!doc) {
-      return { text: "", start: 0 };
+      throw new Error("未找到当前 WPS 文档。");
     }
-    var range = null;
-    if (doc.Content) {
-      range = doc.Content;
-    } else if (doc.Range && typeof doc.Range === "function") {
-      range = doc.Range();
-    }
-    if (!range) {
-      return { text: "", start: 0 };
-    }
-    return {
-      text: range.Text !== undefined ? String(range.Text || "") : "",
-      start: range.Start !== undefined ? Number(range.Start) : 0
-    };
+    return doc;
   }
 
-  function readCurrentSource() {
-    var app = getWpsApplication();
-    var doc = app.ActiveDocument;
-    if (!doc) {
-      return { text: "", start: 0 };
+  function documentStart(doc) {
+    if (doc.Content && doc.Content.Start !== undefined) {
+      return Number(doc.Content.Start) || 0;
     }
-    var selection = app.Selection;
-    var start = 0;
-    if (selection) {
-      var selectedRange = selection.Range || selection;
-      if (selectedRange && selectedRange.Start !== undefined) {
-        start = Number(selectedRange.Start) || 0;
-      }
-    }
-    var end = null;
+    return 0;
+  }
+
+  function documentEnd(doc) {
     if (doc.Content && doc.Content.End !== undefined) {
-      end = Number(doc.Content.End);
+      return Number(doc.Content.End) || 0;
     }
-    var range = null;
-    if (doc.Range && typeof doc.Range === "function") {
-      range = end === null ? doc.Range(start) : doc.Range(start, end);
-    } else if (doc.Content) {
-      range = doc.Content;
+    var range = doc.Range && doc.Range();
+    return range && range.End !== undefined ? Number(range.End) || 0 : 0;
+  }
+
+  function selectionLocation() {
+    try {
+      var app = getWpsApplication();
+      var selection = app.Selection;
+      if (!selection) {
+        return { hasCursor: false, start: 0, end: 0, page: 1 };
+      }
+      var range = selection.Range || selection;
+      if (!range || range.Start === undefined) {
+        return { hasCursor: false, start: 0, end: 0, page: 1 };
+      }
+      return {
+        hasCursor: true,
+        start: Number(range.Start) || 0,
+        end: range.End !== undefined ? Number(range.End) || Number(range.Start) || 0 : Number(range.Start) || 0,
+        page: pageNumber(selection, range)
+      };
+    } catch (_) {
+      return { hasCursor: false, start: 0, end: 0, page: 1 };
     }
+  }
+
+  function pageNumber(selection, range) {
+    try {
+      if (selection && typeof selection.Information === "function") {
+        return Number(selection.Information(WD_ACTIVE_END_PAGE_NUMBER)) || 1;
+      }
+    } catch (_) {}
+    try {
+      if (range && typeof range.Information === "function") {
+        return Number(range.Information(WD_ACTIVE_END_PAGE_NUMBER)) || 1;
+      }
+    } catch (_) {}
+    return 1;
+  }
+
+  function goToPage(doc, page) {
+    var app = getWpsApplication();
+    var attempts = [
+      function () { return doc.GoTo(WD_GO_TO_PAGE, WD_GO_TO_ABSOLUTE, page); },
+      function () { return doc.Range(0, 0).GoTo(WD_GO_TO_PAGE, WD_GO_TO_ABSOLUTE, page); },
+      function () { return app.Selection.GoTo(WD_GO_TO_PAGE, WD_GO_TO_ABSOLUTE, page); }
+    ];
+    for (var i = 0; i < attempts.length; i += 1) {
+      try {
+        var range = attempts[i]();
+        if (range && range.Start !== undefined) {
+          return range;
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function pageStart(doc, page) {
+    if (page <= 1) {
+      return documentStart(doc);
+    }
+    var range = goToPage(doc, page);
+    return range && range.Start !== undefined ? Number(range.Start) : null;
+  }
+
+  function pageEnd(doc, page) {
+    var next = pageStart(doc, page + 1);
+    var end = documentEnd(doc);
+    if (next !== null && next > 0) {
+      return Math.max(documentStart(doc), Math.min(next - 1, end));
+    }
+    return end;
+  }
+
+  function rangeText(doc, start, end) {
+    var range = doc.Range && doc.Range(start, end);
     if (!range) {
       return { text: "", start: start };
     }
@@ -210,6 +272,32 @@
       text: range.Text !== undefined ? String(range.Text || "") : "",
       start: range.Start !== undefined ? Number(range.Start) : start
     };
+  }
+
+  function readContinuousSource() {
+    var doc = activeDocument();
+    var loc = selectionLocation();
+    var start = loc.hasCursor ? loc.start : documentStart(doc);
+    return rangeText(doc, start, documentEnd(doc));
+  }
+
+  function readCurrentPageSource() {
+    var doc = activeDocument();
+    var loc = selectionLocation();
+    var page = loc.page || 1;
+    var start = loc.hasCursor ? loc.start : pageStart(doc, page);
+    if (start === null || start === undefined) {
+      start = documentStart(doc);
+    }
+    var end = pageEnd(doc, page);
+    if (end <= start) {
+      end = documentEnd(doc);
+    }
+    return rangeText(doc, start, end);
+  }
+
+  function currentSource() {
+    return readMode === "page" ? readCurrentPageSource() : readContinuousSource();
   }
 
   function splitSentences(source) {
@@ -253,15 +341,15 @@
 
   function selectDocumentRange(segment) {
     try {
-      var app = getWpsApplication();
-      var doc = app.ActiveDocument;
-      if (!doc || !doc.Range) {
+      var doc = activeDocument();
+      if (!doc.Range) {
         return;
       }
       var range = doc.Range(segment.start, segment.end);
       if (range && typeof range.Select === "function") {
         range.Select();
       }
+      var app = getWpsApplication();
       if (app.ActiveWindow && typeof app.ActiveWindow.ScrollIntoView === "function") {
         app.ActiveWindow.ScrollIntoView(range, true);
       }
@@ -286,26 +374,11 @@
     }
     try {
       return JSON.parse(text);
-    } catch (error) {
+    } catch (_) {
       if (/301|Moved Permanently|404|page not found|<!doctype|<html/i.test(text)) {
-        throw new Error("本地朗读服务版本不匹配或尚未重启。请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。");
+        throw new Error("本地朗读服务版本不匹配或尚未重启，请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。");
       }
       throw new Error("本地朗读服务返回了无法识别的数据，接口：" + path + "。请重启 WPS 和 wps-tts.service 后重试。");
-    }
-  }
-
-  function clearAudio() {
-    if (currentAbortController) {
-      currentAbortController.abort();
-      currentAbortController = null;
-    }
-  }
-
-  async function postControl(path) {
-    try {
-      await request(path, { method: "POST" });
-    } catch (error) {
-      status(userMessage(error));
     }
   }
 
@@ -320,11 +393,11 @@
 
     var normalized = normalizeText(source.text);
     if (!normalized) {
-      notify("没有可朗读的文本，请先选中文本或打开包含正文的文档。");
+      notify("没有可朗读的文本，请确认文档中有正文内容。");
       return;
     }
     if (normalized.length > MAX_TEXT_LENGTH) {
-      notify("文档内容过长，请先选中一部分内容朗读。");
+      notify("文档内容过长，请缩短朗读范围后重试。");
       return;
     }
 
@@ -339,9 +412,9 @@
 
     playbackToken += 1;
     var token = playbackToken;
-    isPaused = false;
     isReading = true;
     lastSelectedIndex = -1;
+    status("正在预生成前三句音频，请稍候。");
 
     try {
       await request("/read/start", {
@@ -403,64 +476,51 @@
       return;
     }
     playbackToken += 1;
-    isPaused = false;
     isReading = false;
     lastSelectedIndex = -1;
-    clearAudio();
     postControl("/read/stop");
     if (!silent) {
-      status("已停止。");
+      status("已停止朗读。");
     }
   }
 
-  function pausePlayback() {
-    if (throttleAction()) {
-      return;
+  async function postControl(path) {
+    try {
+      await request(path, { method: "POST" });
+    } catch (error) {
+      status(userMessage(error));
     }
-    if (!isReading) {
-      notify("当前没有正在朗读的内容。");
-      return;
-    }
-    isPaused = true;
-    postControl("/read/pause");
-    status("已暂停。");
   }
 
-  function resumePlayback() {
-    if (throttleAction()) {
-      return;
+  function rateIdForValue(value) {
+    for (var i = 0; i < RATE_OPTIONS.length; i += 1) {
+      if (Math.abs(RATE_OPTIONS[i].value - value) < 0.001) {
+        return RATE_OPTIONS[i].id;
+      }
     }
-    isPaused = false;
-    postControl("/read/resume");
-    status("已继续。");
+    return "rate10";
   }
 
-  function onRateChanged(control, selectedId) {
-    var map = {
-      rate06: 0.6,
-      rate08: 0.8,
-      rate10: 1.0,
-      rate12: 1.2,
-      rate14: 1.4,
-      rate16: 1.6
-    };
-    var id = selectedId || controlId(control);
-    rate = map[id] || 1.0;
-    sendReadSettings();
-    invalidateSettingsControls();
-    status("语速已设置为 " + rate + "x。");
+  function rateLabelForValue(value) {
+    for (var i = 0; i < RATE_OPTIONS.length; i += 1) {
+      if (Math.abs(RATE_OPTIONS[i].value - value) < 0.001) {
+        return RATE_OPTIONS[i].label;
+      }
+    }
+    return "1x";
   }
 
-  function onRateSelected() {
-    var map = {
-      "0.6": "rate06",
-      "0.8": "rate08",
-      "1": "rate10",
-      "1.2": "rate12",
-      "1.4": "rate14",
-      "1.6": "rate16"
-    };
-    return map[String(rate)] || "rate10";
+  function setRateById(id) {
+    for (var i = 0; i < RATE_OPTIONS.length; i += 1) {
+      if (RATE_OPTIONS[i].id === id) {
+        rate = RATE_OPTIONS[i].value;
+        sendReadSettings();
+        invalidateControls();
+        status("朗读语速已设置为 " + RATE_OPTIONS[i].label + "。");
+        return true;
+      }
+    }
+    return false;
   }
 
   function sendReadSettings() {
@@ -476,19 +536,26 @@
     });
   }
 
-  function invalidateSettingsControls() {
+  function setReadMode(mode) {
+    readMode = mode === "page" ? "page" : "continuous";
+    invalidateControls();
+    status(readMode === "page" ? "已切换为当页朗读。" : "已切换为连页朗读。");
+  }
+
+  function invalidateControls() {
     var ui = window.__wpsReadAloudRibbon;
     if (!ui || typeof ui.InvalidateControl !== "function") {
       return;
     }
     [
+      "modeContinuous",
+      "modePage",
       "rateMenu",
-      "rate06",
-      "rate08",
+      "rate05",
+      "rate075",
       "rate10",
-      "rate12",
-      "rate14",
-      "rate16"
+      "rate15",
+      "rate20"
     ].forEach(function (id) {
       try {
         ui.InvalidateControl(id);
@@ -498,24 +565,30 @@
 
   function onGetPressed(control) {
     var id = controlId(control);
-    return id === onRateSelected();
+    if (id === "modeContinuous") {
+      return readMode === "continuous";
+    }
+    if (id === "modePage") {
+      return readMode === "page";
+    }
+    return false;
   }
 
   function onGetLabel(control) {
     var id = controlId(control);
-    var rateLabels = {
-      rate06: "0.6x",
-      rate08: "0.8x",
-      rate10: "1.0x（默认）",
-      rate12: "1.2x",
-      rate14: "1.4x",
-      rate16: "1.6x"
-    };
-    if (id === "rateMenu") {
-      return "朗读语速 " + String(rate) + "x";
+    if (id === "modeContinuous") {
+      return (readMode === "continuous" ? "● " : "○ ") + "连页朗读";
     }
-    if (rateLabels[id]) {
-      return (id === onRateSelected() ? "✓ " : "") + rateLabels[id];
+    if (id === "modePage") {
+      return (readMode === "page" ? "● " : "○ ") + "当页朗读";
+    }
+    if (id === "rateMenu") {
+      return "朗读语速 " + rateLabelForValue(rate);
+    }
+    for (var i = 0; i < RATE_OPTIONS.length; i += 1) {
+      if (RATE_OPTIONS[i].id === id) {
+        return (rateIdForValue(rate) === id ? "✓ " : "") + RATE_OPTIONS[i].label;
+      }
     }
     return "";
   }
@@ -532,7 +605,7 @@
         showDialog({
           title: "服务状态",
           variant: "success",
-          message: "本地朗读服务运行正常。",
+          message: "本地朗读服务运行正常",
           fields: [
             { label: "服务版本", value: health.version },
             { label: "语音引擎", value: health.engine || "未知" },
@@ -553,52 +626,28 @@
     showDialog({
       title: "WPS 文档朗读加载项",
       variant: "info",
-      message: "面向银河麒麟 V10 ARM64 与 WPS 2023 for Linux 的离线文档朗读加载项。",
+      message: "离线文档朗读工具",
       fields: [
+        { label: "适用环境", value: "银河麒麟 V10 ARM64 / WPS 2023 for Linux" },
         { label: "开发者", value: "zhangjingyao" },
         { label: "发布时间", value: "20260516" },
-        { label: "版本", value: "1.0.13" },
+        { label: "版本", value: "1.0.14" },
         { label: "服务地址", value: "127.0.0.1:19860" }
       ],
       links: [
         { label: "发布说明", url: SERVICE_BASE + "/docs/RELEASE_NOTES.md" },
         { label: "验收测试", url: SERVICE_BASE + "/docs/ACCEPTANCE_TEST.md" },
-        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" },
-        { label: "源码说明", url: SERVICE_BASE + "/docs/SOURCE_OFFER.md" }
+        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" }
       ]
     });
   }
 
-  function onSpeakSelection() {
+  function onStartSpeak() {
     try {
-      speakSource(readSelectionSource());
+      speakSource(currentSource());
     } catch (error) {
       notify(userMessage(error));
     }
-  }
-
-  function onSpeakDocument() {
-    try {
-      speakSource(readDocumentSource());
-    } catch (error) {
-      notify(userMessage(error));
-    }
-  }
-
-  function onSpeakFromCursor() {
-    try {
-      speakSource(readCurrentSource());
-    } catch (error) {
-      notify(userMessage(error));
-    }
-  }
-
-  function onPauseSpeak() {
-    pausePlayback();
-  }
-
-  function onResumeSpeak() {
-    resumePlayback();
   }
 
   function onStopSpeak() {
@@ -607,22 +656,31 @@
 
   function onRibbonAction(control) {
     var id = controlId(control);
-    var actions = {
-      speakDocument: onSpeakDocument,
-      speakFromCursor: onSpeakFromCursor,
-      speakSelection: onSpeakSelection,
-      pauseSpeak: onPauseSpeak,
-      resumeSpeak: onResumeSpeak,
-      stopSpeak: onStopSpeak,
-      checkStatus: onCheckStatus,
-      aboutAddin: onAbout
-    };
-    if (/^rate/.test(id)) {
-      onRateChanged(control, id);
+    if (id === "startSpeak") {
+      onStartSpeak();
       return;
     }
-    if (actions[id]) {
-      actions[id]();
+    if (id === "stopSpeak") {
+      onStopSpeak();
+      return;
+    }
+    if (id === "modeContinuous") {
+      setReadMode("continuous");
+      return;
+    }
+    if (id === "modePage") {
+      setReadMode("page");
+      return;
+    }
+    if (setRateById(id)) {
+      return;
+    }
+    if (id === "checkStatus") {
+      onCheckStatus();
+      return;
+    }
+    if (id === "aboutAddin") {
+      onAbout();
       return;
     }
     notify("未识别的文档朗读按钮：" + (id || "未知按钮") + "。");
@@ -633,11 +691,7 @@
     status("文档朗读加载项已初始化。");
   }
 
-  window.onSpeakSelection = onSpeakSelection;
-  window.onSpeakDocument = onSpeakDocument;
-  window.onSpeakFromCursor = onSpeakFromCursor;
-  window.onPauseSpeak = onPauseSpeak;
-  window.onResumeSpeak = onResumeSpeak;
+  window.onStartSpeak = onStartSpeak;
   window.onStopSpeak = onStopSpeak;
   window.onAction = onRibbonAction;
   window.OnAction = onRibbonAction;
@@ -658,18 +712,11 @@
     OnGetPressed: onGetPressed,
     GetLabel: onGetLabel,
     OnGetLabel: onGetLabel,
-    OnSpeakSelection: onSpeakSelection,
-    OnSpeakDocument: onSpeakDocument,
-    OnSpeakFromCursor: onSpeakFromCursor,
-    OnPauseSpeak: onPauseSpeak,
-    OnResumeSpeak: onResumeSpeak,
+    OnStartSpeak: onStartSpeak,
     OnStopSpeak: onStopSpeak,
-    OnRateChanged: onRateChanged,
-    OnRateSelected: onRateSelected,
     OnCheckStatus: onCheckStatus,
     OnAbout: onAbout
   };
-  window.onRateChanged = onRateChanged;
   window.onCheckStatus = onCheckStatus;
   window.onAbout = onAbout;
   window.onGetImage = onGetImage;

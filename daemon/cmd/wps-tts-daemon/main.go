@@ -25,12 +25,13 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unicode"
 )
 
 //go:embed web
 var webFS embed.FS
 
-const AppVersion = "1.0.13"
+const AppVersion = "1.0.14"
 
 const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 
@@ -607,6 +608,25 @@ func (s *Server) stopLocked() {
 
 func (rs *readSession) run() {
 	defer rs.cleanup()
+	warmup := rs.prefetch
+	if warmup < 1 {
+		warmup = 1
+	}
+	if warmup > len(rs.sentences) {
+		warmup = len(rs.sentences)
+	}
+	rs.setState("preparing", "正在预生成前 "+strconv.Itoa(warmup)+" 句，请稍候", -1)
+	for i := 0; i < warmup; i++ {
+		entry := rs.ensureAudio(i)
+		if err := rs.waitEntry(entry); err != nil {
+			if rs.ctx.Err() != nil {
+				rs.setState("stopped", "朗读已停止", -1)
+				return
+			}
+			rs.fail(err)
+			return
+		}
+	}
 	for i := range rs.sentences {
 		if rs.ctx.Err() != nil {
 			rs.setState("stopped", "朗读已停止", i)
@@ -812,7 +832,7 @@ func (s *Server) synthesizeSpeech(ctx context.Context, group *processGroup, req 
 	}
 }
 
-var asciiWordRE = regexp.MustCompile(`[A-Za-z]+`)
+var asciiTokenRE = regexp.MustCompile(`[A-Za-z0-9]+(?:[._+\-][A-Za-z0-9]+)*`)
 
 func (s *Server) runSherpaVits(ctx context.Context, group *processGroup, req SpeakRequest) (string, error) {
 	tmp, err := os.CreateTemp("", "wps-read-aloud-*.wav")
@@ -1102,14 +1122,107 @@ func preprocessFanchenText(text string) string {
 		"&", "和",
 	)
 	text = replacer.Replace(text)
-	text = asciiWordRE.ReplaceAllStringFunc(text, func(word string) string {
-		letters := make([]string, 0, len(word))
-		for _, r := range word {
-			letters = append(letters, string(r))
+	text = asciiTokenRE.ReplaceAllStringFunc(text, func(token string) string {
+		parts := make([]string, 0, len(token))
+		for _, r := range token {
+			if spoken := asciiCharSpeech(r); spoken != "" {
+				parts = append(parts, spoken)
+			}
 		}
-		return " " + strings.Join(letters, " ") + " "
+		if len(parts) == 0 {
+			return " "
+		}
+		return " " + strings.Join(parts, " ") + " "
 	})
 	return strings.TrimSpace(strings.Join(strings.Fields(text), " "))
+}
+
+func asciiCharSpeech(r rune) string {
+	switch r {
+	case '0':
+		return "零"
+	case '1':
+		return "一"
+	case '2':
+		return "二"
+	case '3':
+		return "三"
+	case '4':
+		return "四"
+	case '5':
+		return "五"
+	case '6':
+		return "六"
+	case '7':
+		return "七"
+	case '8':
+		return "八"
+	case '9':
+		return "九"
+	case '.', '。':
+		return "点"
+	case '-', '－':
+		return "杠"
+	case '_':
+		return "下划线"
+	case '+':
+		return "加"
+	}
+	switch unicode.ToUpper(r) {
+	case 'A':
+		return "诶"
+	case 'B':
+		return "必"
+	case 'C':
+		return "西"
+	case 'D':
+		return "迪"
+	case 'E':
+		return "伊"
+	case 'F':
+		return "艾弗"
+	case 'G':
+		return "吉"
+	case 'H':
+		return "艾尺"
+	case 'I':
+		return "爱"
+	case 'J':
+		return "杰"
+	case 'K':
+		return "开"
+	case 'L':
+		return "艾勒"
+	case 'M':
+		return "艾姆"
+	case 'N':
+		return "恩"
+	case 'O':
+		return "欧"
+	case 'P':
+		return "批"
+	case 'Q':
+		return "丘"
+	case 'R':
+		return "阿尔"
+	case 'S':
+		return "艾丝"
+	case 'T':
+		return "提"
+	case 'U':
+		return "优"
+	case 'V':
+		return "维"
+	case 'W':
+		return "达不溜"
+	case 'X':
+		return "艾克斯"
+	case 'Y':
+		return "歪"
+	case 'Z':
+		return "兹"
+	}
+	return ""
 }
 
 func existingRuleFsts(value string) string {
@@ -1511,11 +1624,11 @@ func cleanText(text string) string {
 }
 
 func clampRate(rate float64) float64 {
-	if rate < 0.6 {
-		return 0.6
+	if rate < 0.5 {
+		return 0.5
 	}
-	if rate > 1.6 {
-		return 1.6
+	if rate > 2.0 {
+		return 2.0
 	}
 	return rate
 }
