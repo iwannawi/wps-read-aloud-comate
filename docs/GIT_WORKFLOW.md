@@ -21,12 +21,12 @@
 
 ## 版本号与标签
 
-版本号遵循 `主版本.次版本.修订号`，例如 `1.0.20`。
+版本号遵循 `主版本.次版本.修订号`，例如 `1.0.21`。
 
 发布标签格式：
 
 ```text
-v1.0.20-20260517
+v1.0.21-20260517
 ```
 
 标签日期使用实际发布日。
@@ -52,18 +52,18 @@ v1.0.20-20260517
 GitHub 推送和 Release 发布使用仓库内的常驻脚本，不再为每个版本生成临时脚本：
 
 ```powershell
-.\scripts\push_github.ps1 -Tag v1.0.20-20260517
-.\scripts\publish_github_release.ps1 -Version 1.0.20 -ReleaseDate 20260517
+.\scripts\push_github.ps1 -Tag v1.0.21-20260517
+.\scripts\publish_github_release.ps1 -Version 1.0.21 -ReleaseDate 20260517
 ```
 
 脚本默认从本机 Git Credential Manager 读取 GitHub 凭据。只有本机凭据不可用时，才会使用安全输入框提示输入 token。脚本日志不会输出 token 或 Basic 认证头。
 
 ## 前端小改打包
 
-从 `1.0.20` 开始，服务版本号由 `/opt/wps-read-aloud/version.json` 提供。仅修改加载项前端、图标、弹窗样式或说明文件时，不需要重新编译 Go 服务；打包脚本会从当前 `dist/wps-tts-daemon` 或最近一个已生成的 `.deb` 中复用 daemon 二进制。
+从 `1.0.21` 开始，服务版本号由 `/opt/wps-read-aloud/version.json` 提供。仅修改加载项前端、图标、弹窗样式或说明文件时，不需要重新编译 Go 服务；打包脚本会从当前 `dist/wps-tts-daemon` 或最近一个已生成的 `.deb` 中复用 daemon 二进制。
 
 当前交付包命名示例：
 
 ```text
-wps-read-aloud-xc_1.0.20_arm64.deb
+wps-read-aloud-xc_1.0.21_arm64.deb
 ```

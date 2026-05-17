@@ -1,5 +1,5 @@
 Package: wps-read-aloud-xc
-Version: 1.0.20
+Version: 1.0.21
 Section: utils
 Priority: optional
 Architecture: arm64

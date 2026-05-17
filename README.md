@@ -8,6 +8,7 @@
 - 本机允许访问 `127.0.0.1`
 
 本项目提供一个离线 WPS 文档朗读加载项。WPS 顶部新增“文档朗读”选项卡，用户可以从当前光标处开始朗读，支持连页朗读、当页朗读、语速选择、状态检查和关于说明。
+默认 `1.2x` 语速下，句内语义标点按约 `400ms` 节奏停顿，句末追加约 `600ms` 静音；其他语速下停顿时长随语速等比例缩放。
 
 ## 项目结构
 
@@ -60,7 +61,7 @@ python3 packaging/deb/build_deb.py
 最终交付文件：
 
 ```text
-dist/wps-read-aloud-xc_1.0.20_arm64.deb
+dist/wps-read-aloud-xc_1.0.21_arm64.deb
 ```
 
 ## 安装
@@ -68,7 +69,7 @@ dist/wps-read-aloud-xc_1.0.20_arm64.deb
 在 ARM64 麒麟目标机执行：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-xc_1.0.20_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-xc_1.0.21_arm64.deb
 ```
 
 安装包会：

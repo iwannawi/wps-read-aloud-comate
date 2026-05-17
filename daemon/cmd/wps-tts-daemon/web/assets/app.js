@@ -687,14 +687,15 @@
         { label: "适用办公软件", value: "WPS Office 2023 for Linux / WPS Office 2019 for Linux" },
         { label: "开发者", value: "Zhang Jingyao" },
         { label: "发布时间", value: "20260517" },
-        { label: "版本", value: "1.0.20" },
+        { label: "版本", value: "1.0.21" },
         { label: "软件包", value: "wps-read-aloud-xc" },
         { label: "服务地址", value: "127.0.0.1:19860" }
       ],
       links: [
         { label: "发布说明", url: SERVICE_BASE + "/docs/RELEASE_NOTES.md" },
         { label: "验收测试", url: SERVICE_BASE + "/docs/ACCEPTANCE_TEST.md" },
-        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" }
+        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" },
+        { label: "构建发布记录", url: SERVICE_BASE + "/docs/BUILD_RELEASE_LESSONS.md" }
       ]
     });
   }

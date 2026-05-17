@@ -35,6 +35,9 @@ var webFS embed.FS
 const appVersionPath = "/opt/wps-read-aloud/version.json"
 const audioProbePath = "/var/lib/wps-read-aloud/audio-player.json"
 const prefetchTextTarget = 100
+const pauseBaseRate = 1.2
+const standardPauseMsAtBaseRate = 400
+const sentenceEndPauseMsAtBaseRate = 600
 
 type AppInfo struct {
 	Name        string `json:"name"`
@@ -303,10 +306,11 @@ func (s *Server) web(w http.ResponseWriter, r *http.Request) {
 func (s *Server) docs(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Path)
 	allowed := map[string]bool{
-		"RELEASE_NOTES.md":       true,
-		"ACCEPTANCE_TEST.md":     true,
-		"THIRD_PARTY_NOTICES.md": true,
-		"SOURCE_OFFER.md":        true,
+		"RELEASE_NOTES.md":         true,
+		"ACCEPTANCE_TEST.md":       true,
+		"THIRD_PARTY_NOTICES.md":   true,
+		"SOURCE_OFFER.md":          true,
+		"BUILD_RELEASE_LESSONS.md": true,
 	}
 	if !allowed[name] {
 		http.NotFound(w, r)
@@ -846,7 +850,8 @@ func (s *Server) synthesizeSpeech(ctx context.Context, group *processGroup, req 
 	s.engine = engine
 	switch engine {
 	case "sherpa-onnx":
-		req.Text = preprocessFanchenText(req.Text)
+		req.Rate = clampRate(req.Rate)
+		req.Text = preprocessFanchenText(req.Text, req.Rate)
 		return s.runSherpaVits(ctx, group, req)
 	default:
 		return "", errors.New("no available tts engine")
@@ -885,6 +890,10 @@ func (s *Server) runSherpaVits(ctx context.Context, group *processGroup, req Spe
 	if err := cmd.Run(); err != nil {
 		os.Remove(tmpPath)
 		return "", fmt.Errorf("sherpa-onnx failed: %w", err)
+	}
+	if err := appendSilenceToWavFile(tmpPath, sentenceEndPauseMs(req.Rate)); err != nil {
+		os.Remove(tmpPath)
+		return "", fmt.Errorf("append sentence pause failed: %w", err)
 	}
 	return tmpPath, nil
 }
@@ -1156,7 +1165,7 @@ func saveAudioProbe(result audioProbeResult) error {
 	return os.WriteFile(audioProbePath, append(data, '\n'), 0o644)
 }
 
-func preprocessFanchenText(text string) string {
+func preprocessFanchenText(text string, rate float64) string {
 	replacer := strings.NewReplacer(
 		"　", " ",
 		"℃", "摄氏度",
@@ -1175,16 +1184,17 @@ func preprocessFanchenText(text string) string {
 		}
 		return " " + strings.Join(parts, " ") + " "
 	})
-	return normalizeTtsPunctuationSpacing(text)
+	return normalizeTtsPunctuationSpacing(text, rate)
 }
 
-func normalizeTtsPunctuationSpacing(text string) string {
+func normalizeTtsPunctuationSpacing(text string, rate float64) string {
 	var out []rune
 	for _, r := range text {
 		switch {
 		case isSemanticPausePunctuation(r):
 			trimTrailingSpaces(&out)
-			out = append(out, r, ' ')
+			out = append(out, r)
+			out = append(out, punctuationPauseRunes(rate)...)
 		case isPairedBoundaryPunctuation(r):
 			out = append(out, r)
 		case unicode.IsSpace(r):
@@ -1196,6 +1206,22 @@ func normalizeTtsPunctuationSpacing(text string) string {
 		}
 	}
 	return strings.TrimSpace(string(out))
+}
+
+func punctuationPauseRunes(rate float64) []rune {
+	pauseMs := standardPauseMs(rate)
+	count := (pauseMs + 399) / 400
+	if count < 1 {
+		count = 1
+	}
+	if count > 3 {
+		count = 3
+	}
+	out := make([]rune, count)
+	for i := range out {
+		out[i] = ' '
+	}
+	return out
 }
 
 func trimTrailingSpaces(runes *[]rune) {
@@ -1367,6 +1393,60 @@ func concatenateWavFiles(paths []string, expectedSampleRate int) (string, error)
 		return "", err
 	}
 	return tmpPath, nil
+}
+
+func appendSilenceToWavFile(path string, pauseMs int) error {
+	if pauseMs <= 0 {
+		return nil
+	}
+	wav, err := readPCM16Wav(path)
+	if err != nil {
+		return err
+	}
+	wav.data = append(wav.data, silencePCM(wav, pauseMs)...)
+	tmp, err := os.CreateTemp(filepath.Dir(path), "wps-read-aloud-pause-*.wav")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	if err := writePCM16Wav(tmp, wav, wav.data); err != nil {
+		tmp.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	return os.Rename(tmpPath, path)
+}
+
+func silencePCM(wav wavPCM, pauseMs int) []byte {
+	if pauseMs <= 0 || wav.sampleRate == 0 || wav.channels == 0 || wav.bitsPerSample == 0 {
+		return nil
+	}
+	bytesPerFrame := int(wav.channels) * int(wav.bitsPerSample) / 8
+	if bytesPerFrame <= 0 {
+		return nil
+	}
+	frames := int(uint64(wav.sampleRate) * uint64(pauseMs) / 1000)
+	return make([]byte, frames*bytesPerFrame)
+}
+
+func standardPauseMs(rate float64) int {
+	return scaledPauseMs(standardPauseMsAtBaseRate, rate)
+}
+
+func sentenceEndPauseMs(rate float64) int {
+	return scaledPauseMs(sentenceEndPauseMsAtBaseRate, rate)
+}
+
+func scaledPauseMs(baseMs int, rate float64) int {
+	if baseMs <= 0 {
+		return 0
+	}
+	rate = clampRate(rate)
+	return int(float64(baseMs)*pauseBaseRate/rate + 0.5)
 }
 
 func readPCM16Wav(path string) (wavPCM, error) {

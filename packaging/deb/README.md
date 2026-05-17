@@ -5,7 +5,7 @@
 ## 输出文件
 
 ```text
-dist/wps-read-aloud-xc_1.0.20_arm64.deb
+dist/wps-read-aloud-xc_1.0.21_arm64.deb
 ```
 
 Debian 内部包名为 `wps-read-aloud-xc`。安装包文件名统一使用小写，便于 Linux 环境和脚本稳定处理。
@@ -41,7 +41,7 @@ Replaces: wps-read-aloud-zhangjingyao
 ## 安装命令
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-xc_1.0.20_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-xc_1.0.21_arm64.deb
 ```
 
 如果 WPS 已经打开，请安装完成后重启 WPS。

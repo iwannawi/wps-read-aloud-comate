@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PKG_NAME = "wps-read-aloud-xc"
 ARTIFACT_NAME = "wps-read-aloud-xc"
-VERSION = os.environ.get("VERSION", "1.0.20")
+VERSION = os.environ.get("VERSION", "1.0.21")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260517")
 ARCH = os.environ.get("ARCH", "arm64")
 BUILD = ROOT / "build" / "deb" / f"{PKG_NAME}_{VERSION}_{ARCH}"
@@ -41,6 +41,7 @@ REQUIRED = [
     "ACCEPTANCE_TEST.md",
     "SOURCE_OFFER.md",
     "CHECKSUMS.txt",
+    "docs/BUILD_RELEASE_LESSONS.md",
 ]
 
 EXECUTABLE_SUFFIXES = {
@@ -61,6 +62,7 @@ PROJECT_DOC_FILES = [
     "ACCEPTANCE_TEST.md",
     "SOURCE_OFFER.md",
     "CHECKSUMS.txt",
+    "docs/BUILD_RELEASE_LESSONS.md",
 ]
 
 DUPLICATE_LIBRARY_LINKS = {}
@@ -286,7 +288,7 @@ def main() -> None:
     for doc in DOC_FILES:
         shutil.copy2(ROOT / "third_party_licenses" / doc, doc_dir / doc)
     for doc in PROJECT_DOC_FILES:
-        shutil.copy2(ROOT / doc, doc_dir / doc)
+        shutil.copy2(ROOT / doc, doc_dir / Path(doc).name)
 
     debian_binary = b"2.0\n"
     control = tar_bytes(DEBIAN, ["control", "preinst", "postinst", "prerm", "postrm"], gzip_output=True)
