@@ -133,15 +133,8 @@
   }
 
   function onGetImage(control) {
-    var icons = {
-      startSpeak: "assets/icons/start.png",
-      stopSpeak: "assets/icons/stop.png",
-      modeMenu: "assets/icons/mode.png",
-      rateMenu: "assets/icons/rate.png",
-      checkStatus: "assets/icons/status.png",
-      aboutAddin: "assets/icons/about.png"
-    };
-    return icons[controlId(control)] || "assets/icons/start.png";
+    var icons = window.__WPS_READ_ALOUD_ICON_DATA || {};
+    return icons[controlId(control)] || icons.startSpeak || null;
   }
 
   function userMessage(error) {
@@ -676,6 +669,8 @@
         showDialog({
           title: "服务状态",
           variant: "success",
+          width: 680,
+          height: 480,
           message: "本地朗读服务运行正常",
           fields: [
             { label: "服务版本", value: health.version },
@@ -703,15 +698,14 @@
         { label: "适用办公软件", value: "WPS Office 2023 for Linux / WPS Office 2019 for Linux" },
         { label: "开发者", value: "Zhang Jingyao" },
         { label: "发布时间", value: "20260518" },
-        { label: "版本", value: "1.0.23" },
+        { label: "版本", value: "1.0.24" },
         { label: "软件包", value: "wps-read-aloud-xc" },
-        { label: "服务地址", value: "127.0.0.1:19860" }
+        { label: "服务地址", value: "127.0.0.1:19860" },
+        { label: "Copyright", value: "Copyright (c) 2026 Zhang Jingyao. All rights reserved." }
       ],
       links: [
         { label: "发布说明", url: SERVICE_BASE + "/docs/RELEASE_NOTES.md" },
-        { label: "验收测试", url: SERVICE_BASE + "/docs/ACCEPTANCE_TEST.md" },
-        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" },
-        { label: "构建发布记录", url: SERVICE_BASE + "/docs/BUILD_RELEASE_LESSONS.md" }
+        { label: "第三方声明", url: SERVICE_BASE + "/docs/THIRD_PARTY_NOTICES.md" }
       ]
     });
   }

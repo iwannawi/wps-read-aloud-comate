@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ADDIN_NAME="wps-read-aloud"
-ADDIN_VERSION="1.0.23"
+ADDIN_VERSION="1.0.24"
 SOFTWARE_NAME="WPS 文档朗读助手"
 DEVELOPER="Zhang Jingyao"
 RELEASE_DATE="20260518"

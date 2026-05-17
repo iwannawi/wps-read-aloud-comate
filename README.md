@@ -61,7 +61,7 @@ python3 packaging/deb/build_deb.py
 最终交付文件：
 
 ```text
-dist/wps-read-aloud-xc_1.0.23_arm64.deb
+dist/wps-read-aloud-xc_1.0.24_arm64.deb
 ```
 
 ## 安装
@@ -69,7 +69,7 @@ dist/wps-read-aloud-xc_1.0.23_arm64.deb
 在 ARM64 麒麟目标机执行：
 
 ```bash
-sudo dpkg -i dist/wps-read-aloud-xc_1.0.23_arm64.deb
+sudo dpkg -i dist/wps-read-aloud-xc_1.0.24_arm64.deb
 ```
 
 安装包会：

@@ -2,13 +2,13 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-xc
-版本：1.0.23
+版本：1.0.24
 目标环境：ARM64 麒麟操作系统 + WPS Office 2023 for Linux / WPS Office 2019 for Linux
 
 ## 安装测试
 
 ```bash
-sudo dpkg -i wps-read-aloud-xc_1.0.23_arm64.deb
+sudo dpkg -i wps-read-aloud-xc_1.0.24_arm64.deb
 ```
 
 预期结果：
@@ -53,13 +53,13 @@ sudo dpkg -i wps-read-aloud-xc_1.0.23_arm64.deb
 示例文本：
 
 ```text
-这是 WPS 2026 read aloud test，版本是 v1.0.23。
+这是 WPS 2026 read aloud test，版本是 v1.0.24。
 ```
 
 预期结果：
 - 中文正常朗读。
 - 英文和数字不被跳过。
-- 英文和数字按单字符中文读法朗读，例如 `WPS`、`2026`、`v1.0.23` 会被逐字符读出。
+- 英文和数字按单字符中文读法朗读，例如 `WPS`、`2026`、`v1.0.24` 会被逐字符读出。
 - 逗号、顿号、分号、冒号等句内语义标点处应有自然停顿；双引号、单引号、书名号、括号等成对符号不额外增加停顿。
 - 默认 `1.2x` 语速下，句内标准停顿按约 `400ms` 设计，句末追加约 `600ms` 静音；切换其他语速时停顿随语速等比例缩放。
 

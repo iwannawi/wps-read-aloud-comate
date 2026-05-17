@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PKG_NAME = "wps-read-aloud-xc"
 ARTIFACT_NAME = "wps-read-aloud-xc"
-VERSION = os.environ.get("VERSION", "1.0.23")
+VERSION = os.environ.get("VERSION", "1.0.24")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260518")
 ARCH = os.environ.get("ARCH", "arm64")
 BUILD = ROOT / "build" / "deb" / f"{PKG_NAME}_{VERSION}_{ARCH}"

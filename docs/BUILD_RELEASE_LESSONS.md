@@ -15,7 +15,7 @@
 ## 前端与图标
 
 - WPS Linux 加载项 Ribbon 图标优先使用 `size="large"` 配合 `getImage="ribbon.GetImage"`，静态 `image="..."` 在部分 WPS Linux 环境下可能不显示。
-- 当前图标源文件使用 64x64 PNG RGBA 黑色图标，放在 `addin/assets/icons/`，同步脚本会复制到嵌入式服务目录。
+- 当前图标源文件放在 `addin/assets/icons/`；WPS Ribbon 回调优先通过 `addin/assets/icon-data.js` 返回 PNG Base64 data URI，同步脚本会复制到嵌入式服务目录。
 - 仅修改前端、图标、弹窗样式或说明文件时，可以复用最近一个安装包里的 daemon 二进制，不必重新编译 Go 服务。
 
 ## 语音与性能

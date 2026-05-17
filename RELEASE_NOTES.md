@@ -3,7 +3,7 @@
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-xc
 Debian 包名：wps-read-aloud-xc
-版本：1.0.23
+版本：1.0.24
 架构：arm64
 适用操作系统：ARM64 麒麟操作系统
 适用办公软件：WPS Office 2023 for Linux / WPS Office 2019 for Linux
@@ -14,7 +14,9 @@ Debian 包名：wps-read-aloud-xc
 
 - 服务端 `/addin/assets/icons/*.png` 改为优先读取 `/opt/wps-read-aloud/addin/assets/icons/` 中的真实图标文件，读取不到时再回退到 daemon 内嵌资源；图标响应增加 `no-store`，便于现场手动替换验证。
 - 修复朗读启动等待弹窗在点击“停止朗读”后不立即关闭的问题；停止时会主动发送关闭信号，弹窗也会在停止、错误、完成或播放开始后自动关闭。
-- “文档朗读”选项卡 6 个按钮图标替换为本版 32x32 PNG 图标：开始朗读、停止朗读、朗读方式、朗读语速、状态检查、关于朗读。
+- “文档朗读”选项卡 6 个按钮图标替换为本版 128x128 PNG 图标，并在 `getImage` 回调中直接返回 Base64 data URI，验证 WPS Linux 大图标渲染效果。
+- 关于朗读弹窗增加 Copyright 信息，并移除“验收测试”和“构建发布记录”两个说明入口。
+- 状态检查弹窗改为较小尺寸，减少空旷感并保持状态内容完整显示。
 - 句内逗号、顿号、冒号、分号等语义标点继续通过文本预处理提示朗读节奏，不拆分为多个 TTS 合成任务，避免明显增加整句合成时间。
 - 句末停顿改为在整句 wav 末尾追加精确静音：默认 `1.2x` 语速下句内标准停顿按约 `400ms` 设计，句末追加 `600ms` 静音；切换到其他语速时按比例缩放停顿时长。
 - 朗读语速调整为 4 个选项：`0.75x`、`1x`、`1.2x`、`1.5x`，默认语速改为 `1.2x`。
@@ -24,10 +26,10 @@ Debian 包名：wps-read-aloud-xc
 - 打包脚本会自动写入 `version.json`，并在 `dist/wps-tts-daemon` 不存在时从最近一个已生成的 `.deb` 中复用 daemon 二进制，减少前端小改版的构建步骤。
 - GitHub 推送和 Release 发布脚本改为长期复用脚本，优先读取 `gh auth token`，其次读取本机 Git Credential Manager，并会校验 token 有效性；日志不会输出 token 或 Basic 认证头。
 - 文档朗读选项卡的 6 个顶层控件继续使用 `size="large"`，并恢复 WPS JS 加载项更稳定的 `getImage="ribbon.GetImage"` 图标回调方式，避免静态 `image="..."` 在 WPS Linux 中不显示。
-- 选项卡图标替换为 32x32 PNG RGBA 黑色图标，用于验证 WPS Ribbon 对小尺寸图标的显示效果。
+- 选项卡图标改为通过 Base64 data URI 返回，减少路径加载、缓存和 DPI 缩放差异对 WPS Linux Ribbon 图标显示的影响。
 - 朗读启动等待弹窗改为双层居中布局，去掉 compact 模式下的最小宽度限制，修复提示文字在小窗内偏右的问题。
 - 朗读启动等待弹窗隐藏标题行，只保留正文提示，避免重复表达。
-- 软件包文件名统一为小写 `wps-read-aloud-xc_1.0.23_arm64.deb`，与 Debian 内部包名 `wps-read-aloud-xc` 保持一致。
+- 软件包文件名统一为小写 `wps-read-aloud-xc_1.0.24_arm64.deb`，与 Debian 内部包名 `wps-read-aloud-xc` 保持一致。
 - 朗读启动等待弹窗改为更小的 compact 内容布局，降低标题、正文和内边距尺寸，并禁用 compact 弹窗内部滚动，避免小窗出现滚动条。
 - 清理发布目录中的旧安装包、临时推送脚本和可能包含敏感认证输出的日志，避免企业交付目录混入无关文件。
 - 开始朗读时的小提示窗改为紧凑布局，不再依赖固定倒计时自动关闭；进入实际播放后由加载项主动关闭。
@@ -41,7 +43,7 @@ Debian 包名：wps-read-aloud-xc
 ## 安装
 
 ```bash
-sudo dpkg -i wps-read-aloud-xc_1.0.23_arm64.deb
+sudo dpkg -i wps-read-aloud-xc_1.0.24_arm64.deb
 ```
 
 如果 WPS 已经打开，请安装完成后重启 WPS。
