@@ -6,11 +6,11 @@
 
 | 分类 | 目标系统 | CPU 架构 | 安装包格式 | 文件名示例 |
 | --- | --- | --- | --- | --- |
-| Windows | Windows | x86/x64 | exe 安装程序 | wps-read-aloud-comate_1.0.31_windows.exe |
-| 银河麒麟 x64 | 银河麒麟 | amd64 | deb | wps-read-aloud-comate_1.0.31_amd64.deb |
-| 银河麒麟 arm64 | 银河麒麟 | arm64 | deb | wps-read-aloud-comate_1.0.31_arm64.deb |
-| UOS x64 | UOS | amd64 | deb | cn.wps-read-aloud-comate_1.0.31_amd64.deb |
-| UOS arm64 | UOS | arm64 | deb | cn.wps-read-aloud-comate_1.0.31_arm64.deb |
+| Windows | Windows | x86/x64 | exe 安装程序 | wps-read-aloud-comate_1.0.32_windows.exe |
+| 银河麒麟 x64 | 银河麒麟 | amd64 | deb | wps-read-aloud-comate_1.0.32_amd64.deb |
+| 银河麒麟 arm64 | 银河麒麟 | arm64 | deb | wps-read-aloud-comate_1.0.32_arm64.deb |
+| UOS x64 | UOS | amd64 | deb | cn.wps-read-aloud-comate_1.0.32_amd64.deb |
+| UOS arm64 | UOS | arm64 | deb | cn.wps-read-aloud-comate_1.0.32_arm64.deb |
 
 ## 共用部分
 
@@ -68,4 +68,3 @@
 - 安装包内不得混入其他平台专用二进制或服务文件。
 
 旧版手工安装脚本已删除。正式交付只能使用按目标环境生成的安装包，不能直接复制本地 “engines” 目录。
-

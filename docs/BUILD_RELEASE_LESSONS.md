@@ -25,6 +25,7 @@
 - Windows 安装脚本不得覆盖整个 WPS 加载项配置文件。安装和卸载时只增删 “wps-read-aloud” 条目，并对原配置文件生成带时间戳的备份。
 - Windows 安装包默认不要写入 “C:\Program Files (x86)”。普通用户无管理员权限时会报 “New-Item：访问被拒绝”。默认安装路径应使用 “%LOCALAPPDATA%\Programs\WPS Read Aloud Comate”，日志使用 “%LOCALAPPDATA%\WPSReadAloudComate\Logs”。
 - Windows 计划任务的 “RunLevel” 只能使用 “Limited” 或 “Highest”。不要使用 “LeastPrivilege”，否则部分系统会在安装时报参数转换失败。
+- 2026-05-19 验证：即使 “RunLevel” 改为 “Limited”，部分 Windows 环境仍可能在 “Register-ScheduledTask” 阶段报“拒绝访问”。普通用户安装包应优先使用 “HKCU\Software\Microsoft\Windows\CurrentVersion\Run” 注册当前用户自启动，并用隐藏 PowerShell 启动本地朗读服务；计划任务仅作为旧版本清理兼容项。
 - Windows 安装前必须探测 WPS 客户端：至少检查 “wps.exe” 路径、产品版本和 PE 位数。本项目不是进程内 DLL 插件，WPS JS 加载项通过 127.0.0.1 调用独立本地朗读服务，因此本地服务位数不需要和 WPS 位数一致；位数检测用于日志和故障定位，不应阻止 64 位 WPS 安装。
 - Windows x86 安装器启动 “powershell.exe” 时可能进入 32 位 PowerShell，从而漏读 64 位注册表和 “C:\Program Files”。安装器应优先调用 “%WINDIR%\Sysnative\WindowsPowerShell\v1.0\powershell.exe”，安装脚本也必须读取 “App Paths\wps.exe”、Kingsoft/WPS 注册表键、开始菜单快捷方式和 “ProgramW6432”。
 - Windows 安装器应使用 “go build -ldflags -H=windowsgui” 构建为 GUI 子系统程序，避免正常安装时弹出命令行窗口。失败和成功提示使用系统消息框。

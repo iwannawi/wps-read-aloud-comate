@@ -86,35 +86,35 @@
 
 当前版本的五类交付文件：
 
-    dist/wps-read-aloud-comate_1.0.31_windows.exe
-    dist/wps-read-aloud-comate_1.0.31_amd64.deb
-    dist/wps-read-aloud-comate_1.0.31_arm64.deb
-    dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
-    dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
+    dist/wps-read-aloud-comate_1.0.32_windows.exe
+    dist/wps-read-aloud-comate_1.0.32_amd64.deb
+    dist/wps-read-aloud-comate_1.0.32_arm64.deb
+    dist/cn.wps-read-aloud-comate_1.0.32_amd64.deb
+    dist/cn.wps-read-aloud-comate_1.0.32_arm64.deb
 
 ## 安装
 
 x86/x64 Windows 环境：
 
-    运行 dist/wps-read-aloud-comate_1.0.31_windows.exe
+    运行 dist/wps-read-aloud-comate_1.0.32_windows.exe
 
 Windows 安装程序会先检测本机 WPS Office 的安装路径、版本和可执行文件位数。由于本项目采用 WPS JS 加载项加独立本地朗读服务的架构，不向 WPS 进程内注入 DLL，因此同一个 Windows 本地朗读服务可以同时服务 32 位和 64 位 WPS；检测位数主要用于安装日志和问题排查。
 
 银河麒麟 x64 环境：
 
-    sudo dpkg -i dist/wps-read-aloud-comate_1.0.31_amd64.deb
+    sudo dpkg -i dist/wps-read-aloud-comate_1.0.32_amd64.deb
 
 银河麒麟 ARM64 环境：
 
-    sudo dpkg -i dist/wps-read-aloud-comate_1.0.31_arm64.deb
+    sudo dpkg -i dist/wps-read-aloud-comate_1.0.32_arm64.deb
 
 UOS x64 环境：
 
-    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
+    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.32_amd64.deb
 
 UOS ARM64 环境：
 
-    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
+    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.32_arm64.deb
 
 Linux 安装包会：
 - 银河麒麟：安装程序文件到 “/opt/wps-read-aloud-comate”，配置文件到 “/etc/wps-read-aloud-comate/config.yaml”
@@ -147,4 +147,3 @@ Linux 安装包会：
 
     docs/GIT_WORKFLOW.md
     docs/CODEX_AUTOMATION.md
-

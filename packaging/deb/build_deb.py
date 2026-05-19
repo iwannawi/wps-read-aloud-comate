@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASE_PKG_NAME = "wps-read-aloud-comate"
 UOS_APP_ID = "cn.wps-read-aloud-comate"
-VERSION = os.environ.get("VERSION", "1.0.31")
+VERSION = os.environ.get("VERSION", "1.0.32")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260519")
 ARCH = os.environ.get("ARCH", "arm64")
 DISTRO = os.environ.get("DISTRO", "kylin").lower()
@@ -451,4 +451,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

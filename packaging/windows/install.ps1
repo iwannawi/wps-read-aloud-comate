@@ -280,6 +280,52 @@ function Test-WpsRequirement {
   throw "未找到符合版本要求的 WPS Office。Windows 平台最低要求 WPS Office 2019 或更高版本。`r`n已检测到：`r`n$Detected`r`n请升级或安装 WPS Office 后再运行本安装包。"
 }
 
+function New-DaemonLauncher {
+  param(
+    [string]$Root,
+    [string]$Daemon,
+    [string]$Config
+  )
+
+  $Launcher = Join-Path $Root "start-daemon.ps1"
+  $Content = @"
+`$ErrorActionPreference = "SilentlyContinue"
+`$Root = Split-Path -Parent `$MyInvocation.MyCommand.Path
+`$Daemon = Join-Path `$Root "daemon\wps-tts-daemon.exe"
+`$Config = Join-Path `$Root "config.yaml"
+if (!(Test-Path `$Daemon)) {
+  exit 0
+}
+`$Healthy = `$false
+try {
+  `$Response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:19860/health" -TimeoutSec 2
+  `$Healthy = (`$Response.StatusCode -ge 200 -and `$Response.StatusCode -lt 500)
+}
+catch {
+  `$Healthy = `$false
+}
+if (!`$Healthy) {
+  Start-Process -FilePath `$Daemon -ArgumentList @("-config", "`"`$Config`"") -WorkingDirectory `$Root -WindowStyle Hidden
+}
+"@
+  Set-Content -Path $Launcher -Value $Content -Encoding UTF8
+  return $Launcher
+}
+
+function Register-DaemonStartup {
+  param([string]$Launcher)
+
+  $RunKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+  New-Item -Path $RunKey -Force | Out-Null
+  $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+  if (!(Test-Path $PowerShell)) {
+    $PowerShell = "powershell.exe"
+  }
+  $Command = "`"$PowerShell`" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`""
+  Set-ItemProperty -Path $RunKey -Name "WPSReadAloudComate" -Value $Command
+  return $PowerShell
+}
+
 try {
   $Source = Join-Path $PSScriptRoot "app"
   if (!(Test-Path $Source)) {
@@ -296,7 +342,13 @@ try {
   Write-Host "本安装包使用独立本地朗读服务，不注入 WPS 进程，可同时支持 32 位和 64 位 WPS。"
 
   $TaskName = "WPSReadAloudComate"
-  Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  try {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+  }
+  catch {
+    Write-Host "旧版计划任务清理被系统拒绝，已跳过；新版安装使用当前用户 Run 自启动。"
+  }
   New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
   Copy-Item -Path (Join-Path $Source "*") -Destination $InstallDir -Recurse -Force
 
@@ -305,11 +357,10 @@ try {
     throw "安装包不完整：未找到 wps-tts-daemon.exe。"
   }
 
-  $Action = New-ScheduledTaskAction -Execute $Daemon -Argument "-config `"$InstallDir\config.yaml`"" -WorkingDirectory $InstallDir
-  $Trigger = New-ScheduledTaskTrigger -AtLogOn
-  $Principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
-  Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Force | Out-Null
-  Start-ScheduledTask -TaskName $TaskName
+  $Launcher = New-DaemonLauncher -Root $InstallDir -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
+  $PowerShell = Register-DaemonStartup -Launcher $Launcher
+  Start-Process -FilePath $PowerShell -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", $Launcher) -WindowStyle Hidden
+  Write-Host "已注册当前用户登录自启动：HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WPSReadAloudComate"
 
   $JsDir = Join-Path $env:APPDATA "Kingsoft\wps\jsaddons"
   New-Item -ItemType Directory -Force -Path $JsDir | Out-Null

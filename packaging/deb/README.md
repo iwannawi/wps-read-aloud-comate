@@ -6,10 +6,10 @@
 
 当前版本的 Linux 输出文件为：
 
-    dist/wps-read-aloud-comate_1.0.31_amd64.deb
-    dist/wps-read-aloud-comate_1.0.31_arm64.deb
-    dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
-    dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
+    dist/wps-read-aloud-comate_1.0.32_amd64.deb
+    dist/wps-read-aloud-comate_1.0.32_arm64.deb
+    dist/cn.wps-read-aloud-comate_1.0.32_amd64.deb
+    dist/cn.wps-read-aloud-comate_1.0.32_arm64.deb
 
 银河麒麟包的内部包名为 “wps-read-aloud-comate”。UOS 包按照 UOS 应用包名习惯使用 “cn.wps-read-aloud-comate”。文件名统一采用 “包名_版本_架构.deb”。
 

@@ -17,7 +17,30 @@ function Remove-WpsPluginEntry {
   Set-Content -Path $Path -Value $Content -Encoding UTF8
 }
 
-Unregister-ScheduledTask -TaskName "WPSReadAloudComate" -Confirm:$false
+function Stop-DaemonProcess {
+  param([string]$Root)
+  $FullRoot = [System.IO.Path]::GetFullPath($Root)
+  Get-Process -Name "wps-tts-daemon" -ErrorAction SilentlyContinue |
+    ForEach-Object {
+      try {
+        $Path = $_.Path
+        if ($Path -and [System.IO.Path]::GetFullPath($Path).StartsWith($FullRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+          Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+        }
+      }
+      catch {
+      }
+    }
+}
+
+Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WPSReadAloudComate" -ErrorAction SilentlyContinue
+Stop-DaemonProcess -Root $InstallDir
+try {
+  Stop-ScheduledTask -TaskName "WPSReadAloudComate" -ErrorAction SilentlyContinue
+  Unregister-ScheduledTask -TaskName "WPSReadAloudComate" -Confirm:$false -ErrorAction SilentlyContinue
+}
+catch {
+}
 Remove-Item -LiteralPath $InstallDir -Recurse -Force
 $JsDir = Join-Path $env:APPDATA "Kingsoft\wps\jsaddons"
 Get-ChildItem -Path $JsDir -Directory -Filter "wps-read-aloud_*" | Remove-Item -Recurse -Force
