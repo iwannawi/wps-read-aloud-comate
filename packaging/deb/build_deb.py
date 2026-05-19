@@ -9,9 +9,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE_PKG_NAME = "wps-read-aloud-xc"
-UOS_APP_ID = "cn.wps-read-aloud-xc"
-VERSION = os.environ.get("VERSION", "1.0.29")
+BASE_PKG_NAME = "wps-read-aloud-comate"
+UOS_APP_ID = "cn.wps-read-aloud-comate"
+VERSION = os.environ.get("VERSION", "1.0.31")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260519")
 ARCH = os.environ.get("ARCH", "arm64")
 DISTRO = os.environ.get("DISTRO", "kylin").lower()
@@ -24,8 +24,8 @@ if DISTRO not in DISTRO_LABELS:
 OUT = ROOT / "dist"
 PKG_NAME = UOS_APP_ID if DISTRO == "uos" else BASE_PKG_NAME
 ARTIFACT_NAME = UOS_APP_ID if DISTRO == "uos" else BASE_PKG_NAME
-APP_ROOT_REL = f"opt/apps/{UOS_APP_ID}/files" if DISTRO == "uos" else "opt/wps-read-aloud"
-CONFIG_REL = f"{APP_ROOT_REL}/config.yaml" if DISTRO == "uos" else "etc/wps-read-aloud/config.yaml"
+APP_ROOT_REL = f"opt/apps/{UOS_APP_ID}/files" if DISTRO == "uos" else "opt/wps-read-aloud-comate"
+CONFIG_REL = f"{APP_ROOT_REL}/config.yaml" if DISTRO == "uos" else "etc/wps-read-aloud-comate/config.yaml"
 DOC_REL = f"{APP_ROOT_REL}/doc" if DISTRO == "uos" else f"usr/share/doc/{BASE_PKG_NAME}"
 BUILD = ROOT / "build" / "deb" / f"{PKG_NAME}_{VERSION}_{DISTRO}_{ARCH}"
 DATA = BUILD / "data"
@@ -305,14 +305,14 @@ def normalize_control() -> None:
         elif line.startswith("Provides:"):
             out.append(f"Provides: {BASE_PKG_NAME}, wps-read-aloud")
         elif line.startswith("Conflicts:"):
-            conflicts = "wps-read-aloud-zhangjingyao"
+            conflicts = "wps-read-aloud-zhangjingyao, wps-read-aloud-xc, cn.wps-read-aloud-xc"
             if DISTRO == "uos":
                 conflicts += f", {BASE_PKG_NAME}"
             else:
                 conflicts += f", {UOS_APP_ID}"
             out.append(f"Conflicts: {conflicts}")
         elif line.startswith("Replaces:"):
-            replaces = "wps-read-aloud-zhangjingyao"
+            replaces = "wps-read-aloud-zhangjingyao, wps-read-aloud-xc, cn.wps-read-aloud-xc"
             if DISTRO == "uos":
                 replaces += f", {BASE_PKG_NAME}"
             else:
@@ -321,7 +321,7 @@ def normalize_control() -> None:
         elif line.startswith("Description:"):
             out.append(f"Description: WPS 文档朗读助手 for {DISTRO_LABELS[DISTRO]} {ARCH}")
         elif line.startswith(" Supports "):
-            out.append(f" Supports {DISTRO_LABELS[DISTRO]} {ARCH} and WPS Office 2023 for Linux / WPS Office 2019 for Linux.")
+            out.append(f" Supports {DISTRO_LABELS[DISTRO]} {ARCH}. Requires WPS Office 2019 or later; latest stable WPS Office for Linux is recommended.")
         else:
             out.append(line)
     (DEBIAN / "control").write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
@@ -451,7 +451,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
 

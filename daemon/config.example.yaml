@@ -1,10 +1,10 @@
 listen: "127.0.0.1:19860"
 sherpa:
-  bin: "/opt/wps-read-aloud/engines/sherpa-onnx/sherpa-onnx-offline-tts"
+  bin: "/opt/wps-read-aloud-comate/engines/sherpa-onnx/sherpa-onnx-offline-tts"
   num_threads: 2
   target_sample_rate: 16000
-  vits_model: "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/vits-zh-hf-fanchen-C.onnx"
-  vits_lexicon: "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/lexicon.txt"
-  vits_tokens: "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/tokens.txt"
-  vits_rule_fsts: "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/phone.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/date.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/number.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/new_heteronym.fst"
+  vits_model: "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/vits-zh-hf-fanchen-C.onnx"
+  vits_lexicon: "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/lexicon.txt"
+  vits_tokens: "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/tokens.txt"
+  vits_rule_fsts: "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/phone.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/date.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/number.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/new_heteronym.fst"
   vits_speaker_id: 14

@@ -88,13 +88,13 @@ def check_linux_package(target: dict, artifact: Path) -> None:
     if target["distro"] == "uos" and "UOS" not in control:
         fail(f"missing UOS description in control: {artifact.name}")
 
-    app_root = "opt/wps-read-aloud"
-    config_path = "etc/wps-read-aloud/config.yaml"
-    package_name = "wps-read-aloud-xc"
+    app_root = "opt/wps-read-aloud-comate"
+    config_path = "etc/wps-read-aloud-comate/config.yaml"
+    package_name = "wps-read-aloud-comate"
     if target["distro"] == "uos":
-        app_root = "opt/apps/cn.wps-read-aloud-xc/files"
+        app_root = "opt/apps/cn.wps-read-aloud-comate/files"
         config_path = f"{app_root}/config.yaml"
-        package_name = "cn.wps-read-aloud-xc"
+        package_name = "cn.wps-read-aloud-comate"
         if not artifact.name.startswith("cn."):
             fail(f"UOS package name must start with cn.: {artifact.name}")
     elif artifact.name.startswith("cn."):
@@ -155,7 +155,7 @@ def check_windows_package(target: dict, artifact: Path) -> None:
 
 
 def find_embedded_zip(data: bytes, artifact: Path) -> bytes:
-    marker = b"WPS_READ_ALOUD_XC_PAYLOAD_ZIP_V1\n"
+    marker = b"WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1\n"
     offset = data.rfind(marker)
     if offset < 0:
         fail(f"cannot locate embedded payload marker in {artifact.name}")

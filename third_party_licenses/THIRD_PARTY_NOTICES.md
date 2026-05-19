@@ -1,19 +1,19 @@
 # 第三方组件声明
 
-软件名称：WPS 文档朗读助手  
-软件包：wps-read-aloud-xc  
-开发者：Zhang Jingyao  
-发布时间：20260518
+软件名称：WPS 文档朗读助手
+软件包：wps-read-aloud-comate
+开发者：Zhang Jingyao
+发布时间：20260519
 
-本软件包内置离线语音运行组件，用于在 ARM64 麒麟操作系统上提供本地文档朗读能力。第三方组件仅安装在 “/opt/wps-read-aloud” 目录下，不写入系统公共库目录。
+本软件包内置离线语音运行组件，用于在 x86/x64 Windows、银河麒麟 x64/ARM64、UOS x64/ARM64 等目标环境上提供本地文档朗读能力。第三方组件仅安装在本项目专用安装目录下，不写入系统公共库目录。
 
 ## 组件清单
 
 | 组件 | 包内路径 | 许可证或状态 | 来源 |
 | --- | --- | --- | --- |
-| Sherpa-onnx | “/opt/wps-read-aloud/engines/sherpa-onnx/*” | Apache License 2.0 | https://github.com/k2-fsa/sherpa-onnx |
-| ONNX Runtime | “/opt/wps-read-aloud/engines/sherpa-onnx/lib/libonnxruntime*” | MIT License | https://github.com/microsoft/onnxruntime |
-| 中文 VITS 模型 “vits-zh-hf-fanchen-C” | “/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/*” | 上游模型权重未声明明确许可证；正式分发或商用前需单独确认授权，或替换为许可明确的模型 | https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models |
+| Sherpa-onnx | “engines/sherpa-onnx” | Apache License 2.0 | https://github.com/k2-fsa/sherpa-onnx |
+| ONNX Runtime | “engines/sherpa-onnx” 中的 ONNX Runtime 动态库 | MIT License | https://github.com/microsoft/onnxruntime |
+| 中文 VITS 模型 “vits-zh-hf-fanchen-C” | “voices/sherpa/vits-zh-hf-fanchen-C” | 上游模型权重未声明明确许可证；正式分发或商用前需单独确认授权，或替换为许可明确的模型 | https://github.com/k2-fsa/sherpa-onnx/releases/tag/tts-models |
 
 ## 许可结论
 

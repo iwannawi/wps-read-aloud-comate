@@ -1,12 +1,12 @@
 # 第三方源码获取说明
 
 软件名称：WPS 文档朗读助手
-软件包：wps-read-aloud-xc
-版本：1.0.29
+软件包：wps-read-aloud-comate
+版本：1.0.31
 开发者：Zhang Jingyao
 发布时间：20260519
 
-本软件包内置第三方开源组件，以便在 Windows x86、银河麒麟 x64/ARM64、UOS x64/ARM64 环境中离线运行。银河麒麟包安装在 “/opt/wps-read-aloud”，UOS 包安装在 “/opt/apps/cn.wps-read-aloud-xc/files”，Windows 包安装在用户选择的程序目录。
+本软件包内置第三方开源组件，以便在 x86/x64 Windows、银河麒麟 x64/ARM64、UOS x64/ARM64 环境中离线运行。银河麒麟包安装在 “/opt/wps-read-aloud-comate”，UOS 包安装在 “/opt/apps/cn.wps-read-aloud-comate/files”，Windows 包安装在用户选择的程序目录。
 
 ## Sherpa-onnx
 

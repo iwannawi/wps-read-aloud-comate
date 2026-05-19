@@ -9,17 +9,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"unsafe"
 )
 
-var payloadMarker = []byte("WPS_READ_ALOUD_XC_PAYLOAD_ZIP_V1\n")
+var payloadMarker = []byte("WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1\n")
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "WPS 文档朗读助手安装失败：%v\n", err)
-		fmt.Fprintln(os.Stderr, "请按回车键关闭窗口。")
-		_, _ = fmt.Scanln()
+		showMessage("WPS 文档朗读助手安装失败", friendlyInstallError(err), 0x10)
 		os.Exit(1)
 	}
+	showMessage("WPS 文档朗读助手", "安装完成。若 WPS 已打开，请重启 WPS。", 0x40)
 }
 
 func run() error {
@@ -27,7 +28,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	tempRoot, err := os.MkdirTemp("", "wps-read-aloud-xc-installer-*")
+	tempRoot, err := os.MkdirTemp("", "wps-read-aloud-comate-installer-*")
 	if err != nil {
 		return err
 	}
@@ -40,18 +41,60 @@ func run() error {
 		return fmt.Errorf("安装包不完整，未找到 install.ps1")
 	}
 	cmd := exec.Command(
-		"powershell.exe",
+		powershellPath(),
 		"-NoProfile",
 		"-ExecutionPolicy",
 		"Bypass",
 		"-File",
 		installer,
 	)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	cmd.Dir = tempRoot
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 	return cmd.Run()
+}
+
+func powershellPath() string {
+	windir := os.Getenv("WINDIR")
+	candidates := []string{}
+	if windir != "" {
+		candidates = append(candidates,
+			filepath.Join(windir, "Sysnative", "WindowsPowerShell", "v1.0", "powershell.exe"),
+			filepath.Join(windir, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+		)
+	}
+	candidates = append(candidates, "powershell.exe")
+	for _, candidate := range candidates {
+		if filepath.IsAbs(candidate) {
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+			continue
+		}
+		if found, err := exec.LookPath(candidate); err == nil {
+			return found
+		}
+	}
+	return "powershell.exe"
+}
+
+func showMessage(title, text string, flags uintptr) {
+	user32 := syscall.NewLazyDLL("user32.dll")
+	messageBox := user32.NewProc("MessageBoxW")
+	messageBox.Call(
+		0,
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(text))),
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(title))),
+		flags,
+	)
+}
+
+func friendlyInstallError(err error) string {
+	logPath := filepath.Join(os.Getenv("LOCALAPPDATA"), "WPSReadAloudComate", "Logs", "install.log")
+	message := "安装没有完成。\n\n请查看安装日志：\n" + logPath
+	if err != nil {
+		message += "\n\n错误代码：" + err.Error()
+	}
+	return message
 }
 
 func readPayload() ([]byte, error) {

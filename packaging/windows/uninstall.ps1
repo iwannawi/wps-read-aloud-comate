@@ -1,5 +1,5 @@
 ﻿param(
-  [string]$InstallDir = "$env:LOCALAPPDATA\Programs\WPS Read Aloud XC"
+  [string]$InstallDir = "$env:LOCALAPPDATA\Programs\WPS Read Aloud Comate"
 )
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -17,11 +17,10 @@ function Remove-WpsPluginEntry {
   Set-Content -Path $Path -Value $Content -Encoding UTF8
 }
 
-Unregister-ScheduledTask -TaskName "WPSReadAloudXC" -Confirm:$false
+Unregister-ScheduledTask -TaskName "WPSReadAloudComate" -Confirm:$false
 Remove-Item -LiteralPath $InstallDir -Recurse -Force
 $JsDir = Join-Path $env:APPDATA "Kingsoft\wps\jsaddons"
 Get-ChildItem -Path $JsDir -Directory -Filter "wps-read-aloud_*" | Remove-Item -Recurse -Force
 Remove-WpsPluginEntry -Path (Join-Path $JsDir "publish.xml")
 Remove-WpsPluginEntry -Path (Join-Path $JsDir "jsplugins.xml")
 Write-Host "WPS 文档朗读助手已卸载。"
-

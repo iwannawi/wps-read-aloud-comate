@@ -11,7 +11,7 @@ systemctl enable wps-tts.service || true
 systemctl restart wps-tts.service || systemctl start wps-tts.service || true
 
 APP_DIR="@APP_ROOT@"
-touch "${APP_DIR}/.wps-read-aloud-xc"
+touch "${APP_DIR}/.wps-read-aloud-comate"
 
 /usr/bin/wps-read-aloud-register --all-users || true
 

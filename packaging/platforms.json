@@ -1,11 +1,11 @@
 {
-  "version": "1.0.29",
+  "version": "1.0.31",
   "targets": [
     {
-      "id": "windows-x86",
+      "id": "windows",
       "os": "windows",
       "arch": "386",
-      "artifact": "wps-read-aloud-xc_1.0.29_windows_x86.exe",
+      "artifact": "wps-read-aloud-comate_1.0.31_windows.exe",
       "runtime": "resources/runtime/windows-x86"
     },
     {
@@ -13,7 +13,7 @@
       "os": "linux",
       "distro": "kylin",
       "arch": "amd64",
-      "artifact": "wps-read-aloud-xc_1.0.29_amd64.deb",
+      "artifact": "wps-read-aloud-comate_1.0.31_amd64.deb",
       "runtime": "resources/runtime/linux-amd64"
     },
     {
@@ -21,7 +21,7 @@
       "os": "linux",
       "distro": "kylin",
       "arch": "arm64",
-      "artifact": "wps-read-aloud-xc_1.0.29_arm64.deb",
+      "artifact": "wps-read-aloud-comate_1.0.31_arm64.deb",
       "runtime": "resources/runtime/linux-arm64"
     },
     {
@@ -29,7 +29,7 @@
       "os": "linux",
       "distro": "uos",
       "arch": "amd64",
-      "artifact": "cn.wps-read-aloud-xc_1.0.29_amd64.deb",
+      "artifact": "cn.wps-read-aloud-comate_1.0.31_amd64.deb",
       "runtime": "resources/runtime/linux-amd64"
     },
     {
@@ -37,9 +37,8 @@
       "os": "linux",
       "distro": "uos",
       "arch": "arm64",
-      "artifact": "cn.wps-read-aloud-xc_1.0.29_arm64.deb",
+      "artifact": "cn.wps-read-aloud-comate_1.0.31_arm64.deb",
       "runtime": "resources/runtime/linux-arm64"
     }
   ]
 }
-

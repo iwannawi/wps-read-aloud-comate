@@ -708,12 +708,13 @@
       height: 720,
       message: "面向 WPS Office 的本地离线文档朗读加载项。",
       fields: [
-        { label: "版本", value: "1.0.29" },
+        { label: "版本", value: "1.0.31" },
         { label: "发布日期", value: "20260519" },
         { label: "开发者", value: "Zhang Jingyao" },
-        { label: "软件包", value: "wps-read-aloud-xc" },
-        { label: "适用操作系统", value: "ARM64 麒麟操作系统" },
-        { label: "适用办公软件", value: "WPS Office 2023 for Linux / WPS Office 2019 for Linux" },
+        { label: "软件包", value: "wps-read-aloud-comate" },
+        { label: "适用操作系统", value: "x86/x64 Windows；银河麒麟 x64/ARM64；UOS x64/ARM64；以及兼容 WPS JS 加载项和本地离线服务的同类系统" },
+        { label: "Windows 平台", value: "WPS Office 2019 或更高版本，推荐 WPS Office 最新稳定版" },
+        { label: "Linux 平台", value: "WPS Office 2019 或更高版本，推荐最新版 WPS Office for Linux" },
         { label: "服务地址", value: "127.0.0.1:19860" },
         { label: "版权", value: "Copyright © 2026 Zhang Jingyao" },
         { label: "开源组件", value: "本软件包含第三方开源组件，相关版权和许可见第三方声明。" }
@@ -811,7 +812,4 @@
   window.onGetEnabled = onGetEnabled;
   window.onGetLabel = onGetLabel;
 })();
-
-
-
 

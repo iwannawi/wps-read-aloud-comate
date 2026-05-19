@@ -11,7 +11,7 @@ systemctl daemon-reload || true
 if [[ "${1:-}" = "purge" ]]; then
   APP_DIR="@APP_ROOT@"
   CONFIG_DIR="@CONFIG_DIR@"
-  if [[ -f "${APP_DIR}/.wps-read-aloud-xc" || -f "${APP_DIR}/.wps-read-aloud-zhangjingyao" ]]; then
+  if [[ -f "${APP_DIR}/.wps-read-aloud-comate" || -f "${APP_DIR}/.wps-read-aloud-zhangjingyao" ]]; then
     rm -rf "${APP_DIR}"
   else
     echo "Skip removing ${APP_DIR} because ownership marker is missing."

@@ -4,13 +4,10 @@
     name="wps-read-aloud"
     type="wps"
     url="index.html"
-    version="1.0.29"
+    version="1.0.31"
     desc="WPS 文档朗读助手. Developer: Zhang Jingyao. Release date: 20260519.">
     <author name="Zhang Jingyao" email="zhangjingyao@example.invalid"/>
     <ribbon file="ribbon.xml"/>
   </jsplugin>
 </jsplugins>
-
-
-
 

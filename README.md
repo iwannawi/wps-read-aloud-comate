@@ -1,10 +1,12 @@
 # WPS 文档朗读助手
 
 目标环境：
-- Windows x86 环境
+- x86/x64 Windows 环境
 - x64 / ARM64 银河麒麟操作系统
 - x64 / ARM64 UOS 操作系统
-- WPS Office 2023 for Linux / WPS Office 2019 for Linux
+- 以及兼容 WPS JS 加载项和本地离线服务的同类系统
+- Windows 平台：WPS Office 2019 或更高版本，推荐 WPS Office 最新稳定版
+- Linux 平台：WPS Office 2019 或更高版本，推荐最新版 WPS Office for Linux
 - 允许安装 WPS JS 加载项
 - WPS JS API 可读取 WPS 文字选区和全文
 - 本机允许访问 “127.0.0.1”
@@ -18,7 +20,7 @@
 
 朗读功能以中文文档为主，兼顾中英文数字混读。中文按句朗读；英文和数字会在文本预处理阶段转换为逐字符中文读法，避免模型跳过英文或数字。默认 “1.2x” 语速下，句内语义标点按约 “400ms” 节奏停顿，句末追加约 “600ms” 静音；其他语速下停顿时长随语速等比例缩放。
 
-当前项目采用同一套源码、多平台打包的交付方式。每次正式出版本都生成五类安装包：Windows x86 exe 安装程序、银河麒麟 amd64 deb、银河麒麟 arm64 deb、UOS amd64 deb、UOS arm64 deb。各平台共用加载项前端、服务端业务逻辑、文档和模型资源；差异部分集中在原生语音引擎、daemon 二进制、服务启动方式、包名和安装路径。
+当前项目采用同一套源码、多平台打包的交付方式。每次正式出版本都生成五类安装包：x86/x64 Windows exe 安装程序、银河麒麟 amd64 deb、银河麒麟 arm64 deb、UOS amd64 deb、UOS arm64 deb。各平台共用加载项前端、服务端业务逻辑、文档和模型资源；差异部分集中在原生语音引擎、daemon 二进制、服务启动方式、包名和安装路径。
 
 ## 项目结构
 
@@ -50,7 +52,7 @@
     resources/runtime/linux-arm64/sherpa-onnx/
     voices/sherpa/vits-zh-hf-fanchen-C/
 
-这些文件会被打入对应安装包。银河麒麟包安装到 “/opt/wps-read-aloud”；UOS 包按 UOS 应用目录规范安装到 “/opt/apps/cn.wps-read-aloud-xc/files”；Windows 系统安装到用户选择的程序目录。正式构建统一从 “resources/runtime” 读取平台运行时，不再从旧版 “engines” 目录复制，避免把目标环境不需要的库和废弃语音引擎带入安装包。
+这些文件会被打入对应安装包。银河麒麟包安装到 “/opt/wps-read-aloud-comate”；UOS 包按 UOS 应用目录规范安装到 “/opt/apps/cn.wps-read-aloud-comate/files”；Windows 系统安装到用户选择的程序目录。正式构建统一从 “resources/runtime” 读取平台运行时，不再从旧版 “engines” 目录复制，避免把目标环境不需要的库和废弃语音引擎带入安装包。
 
 多平台安装包说明见：
 
@@ -68,7 +70,7 @@
 
 按需构建单个目标时，使用 “--list” 看到的目标编号，例如：
 
-    python3 packaging/build_all.py --target windows-x86
+    python3 packaging/build_all.py --target windows
     python3 packaging/build_all.py --target kylin-amd64
     python3 packaging/build_all.py --target kylin-arm64
     python3 packaging/build_all.py --target uos-amd64
@@ -84,41 +86,43 @@
 
 当前版本的五类交付文件：
 
-    dist/wps-read-aloud-xc_1.0.29_windows_x86.exe
-    dist/wps-read-aloud-xc_1.0.29_amd64.deb
-    dist/wps-read-aloud-xc_1.0.29_arm64.deb
-    dist/cn.wps-read-aloud-xc_1.0.29_amd64.deb
-    dist/cn.wps-read-aloud-xc_1.0.29_arm64.deb
+    dist/wps-read-aloud-comate_1.0.31_windows.exe
+    dist/wps-read-aloud-comate_1.0.31_amd64.deb
+    dist/wps-read-aloud-comate_1.0.31_arm64.deb
+    dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
+    dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
 
 ## 安装
 
-Windows x86 环境：
+x86/x64 Windows 环境：
 
-    运行 dist/wps-read-aloud-xc_1.0.29_windows_x86.exe
+    运行 dist/wps-read-aloud-comate_1.0.31_windows.exe
+
+Windows 安装程序会先检测本机 WPS Office 的安装路径、版本和可执行文件位数。由于本项目采用 WPS JS 加载项加独立本地朗读服务的架构，不向 WPS 进程内注入 DLL，因此同一个 Windows 本地朗读服务可以同时服务 32 位和 64 位 WPS；检测位数主要用于安装日志和问题排查。
 
 银河麒麟 x64 环境：
 
-    sudo dpkg -i dist/wps-read-aloud-xc_1.0.29_amd64.deb
+    sudo dpkg -i dist/wps-read-aloud-comate_1.0.31_amd64.deb
 
 银河麒麟 ARM64 环境：
 
-    sudo dpkg -i dist/wps-read-aloud-xc_1.0.29_arm64.deb
+    sudo dpkg -i dist/wps-read-aloud-comate_1.0.31_arm64.deb
 
 UOS x64 环境：
 
-    sudo dpkg -i dist/cn.wps-read-aloud-xc_1.0.29_amd64.deb
+    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
 
 UOS ARM64 环境：
 
-    sudo dpkg -i dist/cn.wps-read-aloud-xc_1.0.29_arm64.deb
+    sudo dpkg -i dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
 
 Linux 安装包会：
-- 银河麒麟：安装程序文件到 “/opt/wps-read-aloud”，配置文件到 “/etc/wps-read-aloud/config.yaml”
-- UOS：安装程序文件和配置文件到 “/opt/apps/cn.wps-read-aloud-xc/files”
+- 银河麒麟：安装程序文件到 “/opt/wps-read-aloud-comate”，配置文件到 “/etc/wps-read-aloud-comate/config.yaml”
+- UOS：安装程序文件和配置文件到 “/opt/apps/cn.wps-read-aloud-comate/files”
 - 安装并启动 “wps-tts.service”
 - 为已有普通用户注册 WPS JS 加载项
 - 写入安装日志 “/var/log/wps-read-aloud-install.log”
-- 安装第三方组件许可证和交付说明；银河麒麟路径为 “/usr/share/doc/wps-read-aloud-xc”，UOS 路径为 “/opt/apps/cn.wps-read-aloud-xc/files/doc”
+- 安装第三方组件许可证和交付说明；银河麒麟路径为 “/usr/share/doc/wps-read-aloud-comate”，UOS 路径为 “/opt/apps/cn.wps-read-aloud-comate/files/doc”
 
 如果 WPS 已打开，安装后需要重启 WPS 才能加载新版“文档朗读”选项卡。
 

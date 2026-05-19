@@ -6,26 +6,26 @@
 
 当前版本的 Linux 输出文件为：
 
-    dist/wps-read-aloud-xc_1.0.29_amd64.deb
-    dist/wps-read-aloud-xc_1.0.29_arm64.deb
-    dist/cn.wps-read-aloud-xc_1.0.29_amd64.deb
-    dist/cn.wps-read-aloud-xc_1.0.29_arm64.deb
+    dist/wps-read-aloud-comate_1.0.31_amd64.deb
+    dist/wps-read-aloud-comate_1.0.31_arm64.deb
+    dist/cn.wps-read-aloud-comate_1.0.31_amd64.deb
+    dist/cn.wps-read-aloud-comate_1.0.31_arm64.deb
 
-银河麒麟包的内部包名为 “wps-read-aloud-xc”。UOS 包按照 UOS 应用包名习惯使用 “cn.wps-read-aloud-xc”。文件名统一采用 “包名_版本_架构.deb”。
+银河麒麟包的内部包名为 “wps-read-aloud-comate”。UOS 包按照 UOS 应用包名习惯使用 “cn.wps-read-aloud-comate”。文件名统一采用 “包名_版本_架构.deb”。
 
 ## 安装内容
 
 银河麒麟包：
 
-- 程序目录：“/opt/wps-read-aloud”
-- 配置文件：“/etc/wps-read-aloud/config.yaml”
-- 说明和许可证：“/usr/share/doc/wps-read-aloud-xc”
+- 程序目录：“/opt/wps-read-aloud-comate”
+- 配置文件：“/etc/wps-read-aloud-comate/config.yaml”
+- 说明和许可证：“/usr/share/doc/wps-read-aloud-comate”
 
 UOS 包：
 
-- 程序目录：“/opt/apps/cn.wps-read-aloud-xc/files”
-- 配置文件：“/opt/apps/cn.wps-read-aloud-xc/files/config.yaml”
-- 说明和许可证：“/opt/apps/cn.wps-read-aloud-xc/files/doc”
+- 程序目录：“/opt/apps/cn.wps-read-aloud-comate/files”
+- 配置文件：“/opt/apps/cn.wps-read-aloud-comate/files/config.yaml”
+- 说明和许可证：“/opt/apps/cn.wps-read-aloud-comate/files/doc”
 
 两个 Linux 包共同安装：
 
@@ -52,6 +52,6 @@ UOS 包：
 
 ## 升级兼容
 
-当前包名从旧版 “wps-read-aloud-zhangjingyao” 调整为 “wps-read-aloud-xc”。UOS 包和银河麒麟包之间也互相声明冲突和替换，避免同一台机器同时安装两个会注册同名 WPS 加载项、同名 systemd 服务和同一端口服务的包。
+当前包名从旧版 “wps-read-aloud-zhangjingyao” 调整为 “wps-read-aloud-comate”。UOS 包和银河麒麟包之间也互相声明冲突和替换，避免同一台机器同时安装两个会注册同名 WPS 加载项、同名 systemd 服务和同一端口服务的包。
 
 安装脚本同时识别旧版和新版所有权标记，避免从旧版本升级时误判项目目录为外部目录。

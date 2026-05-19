@@ -51,7 +51,7 @@ func appRoot() string {
 	if value := strings.TrimSpace(os.Getenv("WPS_READ_ALOUD_ROOT")); value != "" {
 		return filepath.Clean(value)
 	}
-	return "/opt/wps-read-aloud"
+	return "/opt/wps-read-aloud-comate"
 }
 
 func appVersionPath() string {
@@ -66,7 +66,7 @@ func docDir() string {
 	if value := strings.TrimSpace(os.Getenv("WPS_READ_ALOUD_DOC_DIR")); value != "" {
 		return filepath.Clean(value)
 	}
-	return "/usr/share/doc/wps-read-aloud-xc"
+	return "/usr/share/doc/wps-read-aloud-comate"
 }
 
 func audioProbePath() string {
@@ -187,7 +187,7 @@ type audioProbeItem struct {
 }
 
 func main() {
-	configPath := flag.String("config", "/etc/wps-read-aloud/config.yaml", "config file path")
+	configPath := flag.String("config", "/etc/wps-read-aloud-comate/config.yaml", "config file path")
 	flag.Parse()
 
 	cfg := defaultConfig()
@@ -232,13 +232,13 @@ func defaultConfig() Config {
 	return Config{
 		Listen: "127.0.0.1:19860",
 		Sherpa: SherpaConfig{
-			Bin:              "/opt/wps-read-aloud/engines/sherpa-onnx/sherpa-onnx-offline-tts",
+			Bin:              "/opt/wps-read-aloud-comate/engines/sherpa-onnx/sherpa-onnx-offline-tts",
 			NumThreads:       2,
 			TargetSampleRate: 16000,
-			VitsModel:        "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/vits-zh-hf-fanchen-C.onnx",
-			VitsLexicon:      "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/lexicon.txt",
-			VitsTokens:       "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/tokens.txt",
-			VitsRuleFsts:     "/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/phone.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/date.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/number.fst,/opt/wps-read-aloud/voices/sherpa/vits-zh-hf-fanchen-C/new_heteronym.fst",
+			VitsModel:        "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/vits-zh-hf-fanchen-C.onnx",
+			VitsLexicon:      "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/lexicon.txt",
+			VitsTokens:       "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/tokens.txt",
+			VitsRuleFsts:     "/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/phone.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/date.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/number.fst,/opt/wps-read-aloud-comate/voices/sherpa/vits-zh-hf-fanchen-C/new_heteronym.fst",
 			VitsSpeakerID:    14,
 		},
 	}

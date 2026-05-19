@@ -8,17 +8,17 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = os.environ.get("VERSION", "1.0.29")
+VERSION = os.environ.get("VERSION", "1.0.31")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260519")
 WINDOWS_ARCH = os.environ.get("WINDOWS_ARCH", "386")
 ARCH_LABEL = "x86" if WINDOWS_ARCH in {"386", "x86"} else WINDOWS_ARCH
-PKG_NAME = "wps-read-aloud-xc"
+PKG_NAME = "wps-read-aloud-comate"
 OUT = ROOT / "dist"
 BUILD = ROOT / "build" / "windows" / f"{PKG_NAME}_{VERSION}_windows_{ARCH_LABEL}"
 RUNTIME = ROOT / "resources" / "runtime" / f"windows-{ARCH_LABEL}"
 VOICE = ROOT / "voices" / "sherpa"
 ADDIN = ROOT / "addin"
-EXE = OUT / f"{PKG_NAME}_{VERSION}_windows_{ARCH_LABEL}.exe"
+EXE = OUT / f"{PKG_NAME}_{VERSION}_windows.exe"
 INSTALLER_SRC = ROOT / "packaging" / "windows" / "installer"
 
 
@@ -108,13 +108,13 @@ def build_installer_exe(payload_zip: Path) -> None:
     if EXE.exists():
         EXE.unlink()
     subprocess.run(
-        [str(go_exe()), "build", "-buildvcs=false", "-o", str(EXE), "."],
+        [str(go_exe()), "build", "-buildvcs=false", "-ldflags", "-H=windowsgui", "-o", str(EXE), "."],
         cwd=work,
         env=env,
         check=True,
     )
     with EXE.open("ab") as fh:
-        fh.write(b"WPS_READ_ALOUD_XC_PAYLOAD_ZIP_V1\n")
+        fh.write(b"WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1\n")
         fh.write(payload_zip.read_bytes())
 
 

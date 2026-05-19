@@ -1,14 +1,20 @@
 # 验收测试说明
 
 软件名称：WPS 文档朗读助手
-软件包：wps-read-aloud-xc
-版本：1.0.29
-目标环境：Windows x86、银河麒麟 x64/ARM64、UOS x64/ARM64 + WPS Office 2023 for Linux / WPS Office 2019 for Linux
+软件包：wps-read-aloud-comate
+版本：1.0.31
+目标环境：x86/x64 Windows、银河麒麟 x64/ARM64、UOS x64/ARM64，以及兼容 WPS JS 加载项和本地离线服务的同类系统。Windows 平台要求 WPS Office 2019 或更高版本，推荐 WPS Office 最新稳定版；Linux 平台要求 WPS Office 2019 或更高版本，推荐最新版 WPS Office for Linux。
 
 ## 安装测试
 
-    sudo dpkg -i wps-read-aloud-xc_1.0.29_arm64.deb
-    sudo dpkg -i cn.wps-read-aloud-xc_1.0.29_arm64.deb
+    sudo dpkg -i wps-read-aloud-comate_1.0.31_arm64.deb
+    sudo dpkg -i cn.wps-read-aloud-comate_1.0.31_arm64.deb
+
+Windows 包安装前应检测本机 WPS Office：
+
+- 能显示检测到的 WPS 路径、版本和位数。
+- 32 位和 64 位 WPS 都可以继续安装。
+- 本地朗读服务位数不需要与 WPS 位数一致，安装日志应记录实际检测到的 WPS 位数，便于排查问题。
 
 预期结果：
 - 安装过程无错误退出。
@@ -51,12 +57,12 @@
 
 示例文本：
 
-    这是 WPS 2026 read aloud test，版本是 v1.0.29。
+    这是 WPS 2026 read aloud test，版本是 v1.0.31。
 
 预期结果：
 - 中文正常朗读。
 - 英文和数字不被跳过。
-- 英文和数字按单字符中文读法朗读，例如 “WPS”、“2026”、“v1.0.29” 会被逐字符读出。
+- 英文和数字按单字符中文读法朗读，例如 “WPS”、“2026”、“v1.0.31” 会被逐字符读出。
 - 逗号、顿号、分号、冒号等句内语义标点处应有自然停顿；双引号、单引号、书名号、括号等成对符号不额外增加停顿。
 - 默认 “1.2x” 语速下，句内标准停顿按约 “400ms” 设计，句末追加约 “600ms” 静音；切换其他语速时停顿随语速等比例缩放。
 

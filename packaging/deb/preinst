@@ -10,7 +10,7 @@ APP_DIR="@APP_ROOT@"
 CONFIG_DIR="@CONFIG_DIR@"
 SERVICE_FILE="/lib/systemd/system/wps-tts.service"
 REGISTER_BIN="/usr/bin/wps-read-aloud-register"
-MARKER="${APP_DIR}/.wps-read-aloud-xc"
+MARKER="${APP_DIR}/.wps-read-aloud-comate"
 LEGACY_MARKER="${APP_DIR}/.wps-read-aloud-zhangjingyao"
 PORT="19860"
 
