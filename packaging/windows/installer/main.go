@@ -18,9 +18,11 @@ var payloadMarker = []byte("WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1\n")
 func main() {
 	usedUI, err := run()
 	if err != nil {
-		if !usedUI {
-			showMessage("WPS 文档朗读助手安装失败", friendlyInstallError(err), 0x10)
+		title := "WPS 文档朗读助手安装失败"
+		if usedUI {
+			title = "WPS 文档朗读助手安装界面启动失败"
 		}
+		showMessage(title, friendlyInstallError(err), 0x10)
 		os.Exit(1)
 	}
 	if !usedUI {
@@ -52,15 +54,24 @@ func run() (bool, error) {
 	}
 	cmd := exec.Command(
 		powershellPath(),
+		"-Sta",
 		"-NoProfile",
 		"-ExecutionPolicy",
 		"Bypass",
 		"-File",
 		installer,
 	)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if usedUI {
+		cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000}
+	} else {
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	}
 	cmd.Dir = tempRoot
-	return usedUI, cmd.Run()
+	output, err := cmd.CombinedOutput()
+	if err != nil && len(output) > 0 {
+		return usedUI, fmt.Errorf("%w\n%s", err, strings.TrimSpace(string(output)))
+	}
+	return usedUI, err
 }
 
 func powershellPath() string {

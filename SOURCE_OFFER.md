@@ -4,7 +4,7 @@
 软件包：wps-read-aloud-comate
 版本：1.0.33
 开发者：Zhang Jingyao
-发布时间：20260519
+发布时间：20260520
 
 本软件包内置第三方开源组件，以便在 x86/x64 Windows、银河麒麟 x64/ARM64、UOS x64/ARM64 环境中离线运行。银河麒麟包安装在 “/opt/wps-read-aloud-comate”，UOS 包安装在 “/opt/apps/cn.wps-read-aloud-comate/files”，Windows 包安装在用户选择的程序目录。
 

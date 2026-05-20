@@ -11,8 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASE_PKG_NAME = "wps-read-aloud-comate"
 UOS_APP_ID = "cn.wps-read-aloud-comate"
-VERSION = os.environ.get("VERSION", "1.0.34")
-RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260519")
+VERSION = os.environ.get("VERSION", "1.0.35")
+RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260520")
 ARCH = os.environ.get("ARCH", "arm64")
 DISTRO = os.environ.get("DISTRO", "kylin").lower()
 DISTRO_LABELS = {
