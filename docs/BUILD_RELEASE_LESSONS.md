@@ -34,8 +34,9 @@
 - 安装脚本不得覆盖整个 WPS 加载项配置文件，只增删本项目条目。
 - 注册名称使用中文“文档朗读助手”。
 - 授权描述使用“WPS文档朗读助手加载项申请访问本机语音合成服务”。
-- Windows 端采用 publish.xml 和 jsplugins.xml 双文件本地入口注册，不写 jspluginonline。
-- Windows 若使用 jspluginonline 指向 127.0.0.1，会触发 WPS “允许来自 http://127...” 的在线加载项确认弹窗。
+- Windows WPS 端只写 publish.xml 的单个 jspluginonline 入口，不再同时写 jsplugins.xml。
+- Windows WPS 2023 当前依赖 publish.xml online 入口显示选项卡；重复写 online 和 local 会造成连续授权弹窗。
+- Windows WPS 对 127.0.0.1 online 入口会生成一次安全确认，项目侧只能避免重复注册，不能伪造或关闭 WPS 安全确认。
 - 升级时清理当前中文名称和旧内部名称的授权缓存、阻止缓存。
 - x86 Windows 10/11 启动 PowerShell 时优先使用 Sysnative，避免漏读 64 位注册表。
 
@@ -68,6 +69,7 @@
 - Windows Sherpa-onnx 使用 --vits-tokens，不使用 --tokens。
 - Windows Sherpa-onnx 当前不支持 --tts-sample-rate。
 - 如果出现“Sherpa-onnx 语音引擎启动失败”，先运行 payload 内 sherpa-onnx-offline-tts.exe --help，再用完整参数直接合成 WAV。
+- Windows PowerShell 写配置文件可能带 UTF-8 BOM。Go 简易 YAML 解析器必须去掉行首 BOM，否则 listen 会回退到默认端口。
 - 逗号、顿号、冒号、分号等句内标点不要拆成多个 TTS 任务。
 - 推荐策略是句内文本节奏提示加句末 WAV 静音。
 

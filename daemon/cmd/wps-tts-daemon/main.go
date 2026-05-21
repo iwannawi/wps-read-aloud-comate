@@ -1922,7 +1922,7 @@ func loadSimpleYAML(path string, cfg *Config) error {
 	}
 	var section string
 	for _, raw := range strings.Split(string(data), "\n") {
-		line := strings.TrimSpace(raw)
+		line := strings.TrimSpace(strings.TrimPrefix(raw, "\ufeff"))
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}

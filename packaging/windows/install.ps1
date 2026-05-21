@@ -542,19 +542,15 @@ try {
   New-Item -ItemType Directory -Force -Path $Target | Out-Null
   Copy-Item -Path (Join-Path $InstallDir "addin\*") -Destination $Target -Recurse -Force
 
-  $Index = (Join-Path $Target "index.html").Replace("\", "/")
-  $Ribbon = (Join-Path $Target "ribbon.xml").Replace("\", "/")
-  $FileUrl = "file:///$Index"
+  $LocalUrl = "http://127.0.0.1:19860/addin/"
   $PublishXml = Join-Path $JsDir "publish.xml"
   $PluginsXml = Join-Path $JsDir "jsplugins.xml"
   $KnownNames = @($AddinInternalName, $AddinDisplayName, "WPS 文档朗读助手", "wps-read-aloud-comate", "wps-read-aloud-xc", "wps-read-aloud-zhangjingyao")
-  $LocalEntry = @"
-<jsplugin name="$AddinDisplayName" type="wps" url="$FileUrl" version="$AddinVersion" desc="$AddinDescription">
-    <ribbon file="$Ribbon"/>
-  </jsplugin>
+  $OnlineEntry = @"
+<jspluginonline name="$AddinDisplayName" type="wps" enable="enable" install="$LocalUrl" url="$LocalUrl" desc="$AddinDescription"/>
 "@
-  Set-WpsPluginEntry -Path $PublishXml -Entry $LocalEntry -Names $KnownNames
-  Set-WpsPluginEntry -Path $PluginsXml -Entry $LocalEntry -Names $KnownNames
+  Set-WpsPluginEntry -Path $PublishXml -Entry $OnlineEntry -Names $KnownNames
+  Remove-WpsPluginEntry -Path $PluginsXml -Names $KnownNames
   Remove-WpsAuthAddinEntry -Path (Join-Path $JsDir "authaddin.json") -Name $AddinInternalName
   Remove-WpsAuthAddinEntry -Path (Join-Path $JsDir "authaddin.json") -Name $AddinDisplayName
   Clear-WpsJsAddinBlockHost -JsDir $JsDir

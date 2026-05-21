@@ -84,7 +84,7 @@ type audioCacheEntry struct {
 const (
 	prefetchTextTarget           = 100
 	pauseBaseRate                = 1.2
-	standardPauseMsAtBaseRate   = 400
+	standardPauseMsAtBaseRate    = 400
 	sentenceEndPauseMsAtBaseRate = 600
 )
 
@@ -852,7 +852,9 @@ func appVersion(root string) string {
 	if err != nil {
 		return "dev"
 	}
-	var info struct{ Version string `json:"version"` }
+	var info struct {
+		Version string `json:"version"`
+	}
 	if json.Unmarshal(data, &info) != nil || strings.TrimSpace(info.Version) == "" {
 		return "dev"
 	}
@@ -937,7 +939,7 @@ func loadSimpleYAML(path string, cfg *Config) error {
 	}
 	var section string
 	for _, raw := range strings.Split(string(data), "\n") {
-		line := strings.TrimSpace(raw)
+		line := strings.TrimSpace(strings.TrimPrefix(raw, "\ufeff"))
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}

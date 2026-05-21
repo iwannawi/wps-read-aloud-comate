@@ -2,7 +2,7 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-版本：1.1.3
+版本：1.1.4
 发布时间：20260521
 开发者：Zhang Jingyao
 
@@ -19,8 +19,8 @@
 ## 变更
 
 - Windows 安装器 logo 和任务栏图标改用透明背景 PNG 生成，适配图标规范。
-- Windows 安装界面顶部改用 README 宣传图展示，提升中文文字清晰度，并将完成按钮居中显示。
-- Windows 加载项注册改为本地加载项入口，避免 WPS 将加载项识别为 127.0.0.1 在线加载项。
+- Windows 安装界面顶部改用 README 宣传图展示，固定为常见安装程序窗口大小，并使用高质量缩放绘制，避免图片变形或模糊。
+- Windows 加载项注册改为单一 online 入口，不再同时写入本地入口，避免重复授权弹窗和选项卡加载异常。
 - 朗读方式和朗读语速下拉项改用原生勾选状态，选项文字保持左端对齐。
 - Linux 服务名改为 wps-read-aloud-comate.service，注册脚本改为 wps-read-aloud-comate-register。
 - Linux 新包不再强制移除旧包名，安装时停用旧服务并启用新服务，避免旧包维护脚本异常导致升级中断。
@@ -30,6 +30,8 @@
 
 - 修复超长文档因前端字数上限提前中断，导致启动弹窗出现后朗读未执行的问题。
 - 修复下拉项通过文字前缀显示勾选时视觉对齐不一致的问题。
+- 修复 Windows 改成本地入口后 WPS 不显示“文档朗读”选项卡的问题。
+- 修复 Windows PowerShell 写出带 BOM 配置文件时，本地朗读服务可能无法识别 listen 配置的问题。
 - 修复全量构建时旧版本安装包残留导致发布目录校验失败的问题。
 - 修复 Linux 同包名旧版本升级后可能残留旧服务或旧引擎文件的问题。
 
@@ -37,11 +39,11 @@
 
 | 目标 | 文件 |
 | --- | --- |
-| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.3_windows.exe |
-| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.3_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.3_arm64.deb |
-| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.3_amd64.deb |
-| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.3_arm64.deb |
+| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.4_windows.exe |
+| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.4_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.4_arm64.deb |
+| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.4_amd64.deb |
+| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.4_arm64.deb |
 
 ## 已知限制
 

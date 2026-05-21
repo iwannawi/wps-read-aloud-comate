@@ -4,7 +4,7 @@
     name="文档朗读助手"
     type="wps"
     url="index.html"
-    version="1.1.3"
+    version="1.1.4"
     desc="WPS文档朗读助手加载项申请访问本机语音合成服务">
     <author name="Zhang Jingyao" email="zhangjingyao@example.invalid"/>
     <ribbon file="ribbon.xml"/>
