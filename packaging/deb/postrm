@@ -11,6 +11,10 @@ systemctl daemon-reload || true
 if [[ "${1:-}" = "purge" ]]; then
   APP_DIR="@APP_ROOT@"
   CONFIG_DIR="@CONFIG_DIR@"
+  SERVICE_NAME="@SERVICE_NAME@"
+  REGISTER_BIN="@REGISTER_BIN@"
+  rm -f "/lib/systemd/system/${SERVICE_NAME}"
+  rm -f "${REGISTER_BIN}"
   if [[ -f "${APP_DIR}/.wps-read-aloud-comate" || -f "${APP_DIR}/.wps-read-aloud-zhangjingyao" ]]; then
     rm -rf "${APP_DIR}"
   else

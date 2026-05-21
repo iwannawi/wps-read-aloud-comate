@@ -89,11 +89,11 @@ register_home() {
     cp "${js_dir}/jsplugins.xml" "${jsplugins_bak}"
   fi
 
-  if ! write_xml_file "${js_dir}/publish.xml" "  <jspluginonline name=\"${ADDIN_NAME}\" type=\"wps\" enable=\"enable\" install=\"${LOCAL_URL}\" url=\"${LOCAL_URL}\" desc=\"文档朗读助手需要使用本机语音服务\"/>"; then
+  if ! write_xml_file "${js_dir}/publish.xml" "  <jspluginonline name=\"${ADDIN_NAME}\" type=\"wps\" enable=\"enable\" install=\"${LOCAL_URL}\" url=\"${LOCAL_URL}\" desc=\"WPS文档朗读助手加载项申请访问本机语音合成服务\"/>"; then
     [[ -n "${publish_bak}" ]] && cp "${publish_bak}" "${js_dir}/publish.xml"
     return 1
   fi
-  if ! write_xml_file "${js_dir}/jsplugins.xml" "  <jsplugin name=\"${ADDIN_NAME}\" type=\"wps\" url=\"${LOCAL_URL}\" version=\"${ADDIN_VERSION}\" desc=\"文档朗读助手需要使用本机语音服务\">
+  if ! write_xml_file "${js_dir}/jsplugins.xml" "  <jsplugin name=\"${ADDIN_NAME}\" type=\"wps\" url=\"${LOCAL_URL}\" version=\"${ADDIN_VERSION}\" desc=\"WPS文档朗读助手加载项申请访问本机语音合成服务\">
     <ribbon file=\"${RIBBON_URL}\"/>
   </jsplugin>"; then
     [[ -n "${publish_bak}" ]] && cp "${publish_bak}" "${js_dir}/publish.xml"

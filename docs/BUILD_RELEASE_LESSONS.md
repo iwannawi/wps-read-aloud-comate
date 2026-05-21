@@ -34,14 +34,18 @@
 - 安装脚本不得覆盖整个 WPS 加载项配置文件，只增删本项目条目。
 - 注册名称使用中文“文档朗读助手”。
 - 授权描述使用“WPS文档朗读助手加载项申请访问本机语音合成服务”。
-- Windows 端采用 publish.xml 在线入口加 jsplugins.xml 本地入口的双注册方式。
-- jspluginonline 的 url 写到 http://127.0.0.1:19860/addin/，不要写到 index.html。
+- Windows 端采用 publish.xml 和 jsplugins.xml 双文件本地入口注册，不写 jspluginonline。
+- Windows 若使用 jspluginonline 指向 127.0.0.1，会触发 WPS “允许来自 http://127...” 的在线加载项确认弹窗。
 - 升级时清理当前中文名称和旧内部名称的授权缓存、阻止缓存。
 - x86 Windows 10/11 启动 PowerShell 时优先使用 Sysnative，避免漏读 64 位注册表。
 
 ## Linux 安装
 
 - x64 银河麒麟 V10 及以上、ARM64 银河麒麟 V10 及以上、x64 UOS V20、ARM64 UOS V20 使用 systemd。
+- 新版本使用 wps-read-aloud-comate.service，避免与旧版 wps-tts.service 发生文件归属冲突。
+- 不要再通过 Conflicts/Replaces 强制移除旧包名；旧包维护脚本损坏时，dpkg 会先执行旧脚本并导致新包无法接管。
+- 安装时应停用旧版 wps-tts.service，再启用 wps-read-aloud-comate.service。
+- 同包名升级仍要处理旧版本残留：postinst 清理旧服务文件、旧注册脚本和已废弃的 piper/espeak 目录。
 - 同版本重装时，如果端口已由本项目旧服务占用，preinst 不应直接阻断。
 - 判断旧服务时同时检查 marker、service 文件路径和 /health 响应。
 - WPS 首次访问 127.0.0.1:19860 的授权弹窗可能由 WPS 内核生成，不能完全依赖 desc 改写文案。

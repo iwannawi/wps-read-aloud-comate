@@ -2,7 +2,7 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-版本：1.1.2
+版本：1.1.3
 发布时间：20260521
 开发者：Zhang Jingyao
 
@@ -16,38 +16,32 @@
 | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 |
 | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 |
 
-## 新增
-
-- 新增 Windows 朗读预合成队列，播放当前句时提前合成后续句。
-- 新增数学符号中文读法，覆盖加、减、乘、除、等于、大于、小于、百分号等常见符号。
-
 ## 变更
 
-- Windows 安装界面改为绘制式头部区域，使用透明背景 logo，避免白底遮挡和文字不可见。
-- Windows 安装器 logo 和任务栏图标改用用户确认的正式图标。
-- README 顶部增加正式宣传图，GitHub 仓库首页展示更直观。
-- 首次授权提示文案改短，降低用户理解成本。
-- 超长文档超过 1000 句时不再单独弹窗，提示信息合并到朗读启动对话框中显示。
-- Linux 安装脚本增加旧版维护脚本兼容处理，降低旧包卸载失败导致升级中断的概率。
-- GitHub Release 发布流程改为使用 UTF-8 安全方式生成说明文件，避免中文乱码。
+- Windows 安装器 logo 和任务栏图标改用透明背景 PNG 生成，适配图标规范。
+- Windows 安装界面顶部改用 README 宣传图展示，提升中文文字清晰度，并将完成按钮居中显示。
+- Windows 加载项注册改为本地加载项入口，避免 WPS 将加载项识别为 127.0.0.1 在线加载项。
+- 朗读方式和朗读语速下拉项改用原生勾选状态，选项文字保持左端对齐。
+- Linux 服务名改为 wps-read-aloud-comate.service，注册脚本改为 wps-read-aloud-comate-register。
+- Linux 新包不再强制移除旧包名，安装时停用旧服务并启用新服务，避免旧包维护脚本异常导致升级中断。
+- Linux 同包名升级时清理旧服务文件、旧注册脚本和废弃语音引擎目录，确保新版本完整接管。
 
 ## 修复
 
-- 修复 Windows 朗读上一句和下一句之间等待时间过长的问题。
-- 修复 Windows 安装器 logo 白底和头部文字显示异常的问题。
-- 修复旧 WPS 加载项注册项残留可能导致“打开JS调试器”入口继续显示的问题。
-- 修复长文档朗读范围提示不可见的问题。
-- 修复 Release 草稿发布超时后可能留下乱码说明和不完整附件的问题。
+- 修复超长文档因前端字数上限提前中断，导致启动弹窗出现后朗读未执行的问题。
+- 修复下拉项通过文字前缀显示勾选时视觉对齐不一致的问题。
+- 修复全量构建时旧版本安装包残留导致发布目录校验失败的问题。
+- 修复 Linux 同包名旧版本升级后可能残留旧服务或旧引擎文件的问题。
 
 ## 交付文件
 
 | 目标 | 文件 |
 | --- | --- |
-| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.2_windows.exe |
-| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.2_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.2_arm64.deb |
-| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.2_amd64.deb |
-| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.2_arm64.deb |
+| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.3_windows.exe |
+| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.3_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.3_arm64.deb |
+| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.3_amd64.deb |
+| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.3_arm64.deb |
 
 ## 已知限制
 

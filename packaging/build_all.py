@@ -17,6 +17,10 @@ INTERMEDIATE_PREFIXES = (
     "wps-tts-daemon-linux-",
     "wps-tts-daemon-windows-",
 )
+RELEASE_FILE_PREFIXES = (
+    "wps-read-aloud-comate_",
+    "cn.wps-read-aloud-comate_",
+)
 
 
 def load_targets():
@@ -129,6 +133,14 @@ def cleanup_intermediate_binaries():
             path.unlink()
 
 
+def cleanup_stale_release_files():
+    if not DIST.is_dir():
+        return
+    for path in DIST.iterdir():
+        if path.is_file() and any(path.name.startswith(prefix) for prefix in RELEASE_FILE_PREFIXES):
+            path.unlink()
+
+
 def check_platform_inputs_if_all_targets(targets, selected_targets):
     if {target["id"] for target in targets} == {target["id"] for target in selected_targets}:
         run([PYTHON, "packaging/check_platform_inputs.py"])
@@ -168,6 +180,8 @@ def main():
         raise SystemExit("unknown target: " + ", ".join(sorted(unknown)))
 
     selected_targets = [target for target in targets if target["id"] in selected]
+    if {target["id"] for target in targets} == {target["id"] for target in selected_targets}:
+        cleanup_stale_release_files()
     check_platform_inputs_if_all_targets(targets, selected_targets)
 
     for target in selected_targets:

@@ -6,14 +6,53 @@ mkdir -p /var/log
 exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] postinst $*"
 
-systemctl daemon-reload || true
-systemctl enable wps-tts.service || true
-systemctl restart wps-tts.service || systemctl start wps-tts.service || true
-
+SERVICE_NAME="@SERVICE_NAME@"
+LEGACY_SERVICE_NAME="@LEGACY_SERVICE_NAME@"
+REGISTER_BIN="@REGISTER_BIN@"
+LEGACY_SERVICE_FILE="/lib/systemd/system/${LEGACY_SERVICE_NAME}"
+LEGACY_REGISTER_BIN="/usr/bin/wps-read-aloud-register"
 APP_DIR="@APP_ROOT@"
+
+legacy_file_owned_by_project() {
+  local path="$1"
+  [[ -f "${path}" ]] || return 1
+  grep -Eq 'wps-read-aloud|wps-tts-daemon|文档朗读助手' "${path}" 2>/dev/null
+}
+
+remove_path_if_inside_app_dir() {
+  local path="$1"
+  case "${path}" in
+    "${APP_DIR}/"*) rm -rf "${path}" || true ;;
+  esac
+}
+
+if [[ -f "${LEGACY_SERVICE_FILE}" ]] && {
+  grep -q "wps-read-aloud" "${LEGACY_SERVICE_FILE}" 2>/dev/null ||
+  grep -q "wps-tts-daemon" "${LEGACY_SERVICE_FILE}" 2>/dev/null
+}; then
+  systemctl disable --now "${LEGACY_SERVICE_NAME}" || true
+  rm -f "${LEGACY_SERVICE_FILE}" || true
+fi
+
+if legacy_file_owned_by_project "${LEGACY_REGISTER_BIN}"; then
+  rm -f "${LEGACY_REGISTER_BIN}" || true
+fi
+
+remove_path_if_inside_app_dir "${APP_DIR}/engines/piper"
+remove_path_if_inside_app_dir "${APP_DIR}/engines/espeak"
+remove_path_if_inside_app_dir "${APP_DIR}/engines/espeak-ng"
+remove_path_if_inside_app_dir "${APP_DIR}/voices/piper"
+remove_path_if_inside_app_dir "${APP_DIR}/voices/espeak"
+remove_path_if_inside_app_dir "${APP_DIR}/docs"
+remove_path_if_inside_app_dir "${APP_DIR}/.wps-read-aloud-zhangjingyao"
+
+systemctl daemon-reload || true
+systemctl enable "${SERVICE_NAME}" || true
+systemctl restart "${SERVICE_NAME}" || systemctl start "${SERVICE_NAME}" || true
+
 touch "${APP_DIR}/.wps-read-aloud-comate"
 
-/usr/bin/wps-read-aloud-register --all-users || true
+"${REGISTER_BIN}" --all-users || true
 
 expected_version="$(
   sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${APP_DIR}/version.json" 2>/dev/null | head -n 1
@@ -42,7 +81,7 @@ done
 if [[ "${health_ok}" -ne 1 ]]; then
   echo "wps-read-aloud installed, but service health check did not pass yet."
   echo "The WPS add-in is installed, but read-aloud may not work until the service is healthy."
-  echo "Check logs with: journalctl -u wps-tts.service -n 80 --no-pager"
+  echo "Check logs with: journalctl -u ${SERVICE_NAME} -n 80 --no-pager"
 fi
 
 selftest_ok=0
@@ -58,7 +97,7 @@ if [[ "${health_ok}" -eq 1 ]]; then
   else
     echo "wps-read-aloud service is running, but synthesis self-test did not pass."
     echo "Read-aloud may not work until the bundled engine/model issue is fixed."
-    echo "Check logs with: journalctl -u wps-tts.service -n 120 --no-pager"
+    echo "Check logs with: journalctl -u ${SERVICE_NAME} -n 120 --no-pager"
   fi
 fi
 

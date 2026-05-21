@@ -11,7 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASE_PKG_NAME = "wps-read-aloud-comate"
 UOS_APP_ID = "cn.wps-read-aloud-comate"
-VERSION = os.environ.get("VERSION", "1.1.2")
+SERVICE_NAME = "wps-read-aloud-comate.service"
+LEGACY_SERVICE_NAME = "wps-tts.service"
+REGISTER_BIN_NAME = "wps-read-aloud-comate-register"
+VERSION = os.environ.get("VERSION", "1.1.3")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260521")
 ARCH = os.environ.get("ARCH", "arm64")
 DISTRO = os.environ.get("DISTRO", "kylin").lower()
@@ -64,7 +67,7 @@ REQUIRED = [
 EXECUTABLE_SUFFIXES = {
     f"{APP_ROOT_REL}/daemon/wps-tts-daemon",
     f"{APP_ROOT_REL}/engines/sherpa-onnx/sherpa-onnx-offline-tts",
-    "usr/bin/wps-read-aloud-register",
+    f"usr/bin/{REGISTER_BIN_NAME}",
 }
 
 DOC_FILES = [
@@ -243,6 +246,9 @@ def write_debian_script(script: str) -> None:
         "@PACKAGE_NAME@": PKG_NAME,
         "@BASE_PACKAGE_NAME@": BASE_PKG_NAME,
         "@ADDIN_VERSION@": VERSION,
+        "@SERVICE_NAME@": SERVICE_NAME,
+        "@LEGACY_SERVICE_NAME@": LEGACY_SERVICE_NAME,
+        "@REGISTER_BIN@": f"/usr/bin/{REGISTER_BIN_NAME}",
     }
     for key, value in replacements.items():
         text = text.replace(key, value)
@@ -309,20 +315,8 @@ def normalize_control() -> None:
             out.append(f"Architecture: {ARCH}")
         elif line.startswith("Provides:"):
             out.append(f"Provides: {BASE_PKG_NAME}, wps-read-aloud")
-        elif line.startswith("Conflicts:"):
-            conflicts = "wps-read-aloud-zhangjingyao, wps-read-aloud-xc, cn.wps-read-aloud-xc"
-            if DISTRO == "uos":
-                conflicts += f", {BASE_PKG_NAME}"
-            else:
-                conflicts += f", {UOS_APP_ID}"
-            out.append(f"Conflicts: {conflicts}")
-        elif line.startswith("Replaces:"):
-            replaces = "wps-read-aloud-zhangjingyao, wps-read-aloud-xc, cn.wps-read-aloud-xc"
-            if DISTRO == "uos":
-                replaces += f", {BASE_PKG_NAME}"
-            else:
-                replaces += f", {UOS_APP_ID}"
-            out.append(f"Replaces: {replaces}")
+        elif line.startswith("Conflicts:") or line.startswith("Replaces:"):
+            continue
         elif line.startswith("Description:"):
             out.append(f"Description: WPS 文档朗读助手 for {PLATFORM_LABEL}")
         elif line.startswith(" Supports "):
@@ -429,9 +423,9 @@ def main() -> None:
     (DATA / CONFIG_REL).parent.mkdir(parents=True, exist_ok=True)
     write_linux_config(DATA / CONFIG_REL)
     (DATA / "lib/systemd/system").mkdir(parents=True, exist_ok=True)
-    write_systemd_service(DATA / "lib/systemd/system/wps-tts.service")
+    write_systemd_service(DATA / f"lib/systemd/system/{SERVICE_NAME}")
     (DATA / "usr/bin").mkdir(parents=True, exist_ok=True)
-    register = DATA / "usr/bin/wps-read-aloud-register"
+    register = DATA / f"usr/bin/{REGISTER_BIN_NAME}"
     write_debian_script("wps-read-aloud-register")
     shutil.move(DEBIAN / "wps-read-aloud-register", register)
     doc_dir = DATA / DOC_REL

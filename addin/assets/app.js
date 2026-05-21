@@ -5,7 +5,6 @@
   var SERVICE_BASE = (window.location && window.location.protocol.indexOf("http") === 0)
     ? ""
     : SERVICE_ORIGIN;
-  var MAX_TEXT_LENGTH = 200000;
   var MAX_SENTENCES = 1000;
   var MAX_SENTENCE_LENGTH = 1000;
   var SENTENCE_END = /[。！？!?；;]+|[\r\n]+/g;
@@ -426,9 +425,9 @@
       return JSON.parse(text);
     } catch (_) {
       if (/301|Moved Permanently|404|page not found|<!doctype|<html/i.test(text)) {
-        throw new Error("本地朗读服务版本不匹配或尚未重启，请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。");
+        throw new Error("本地朗读服务版本不匹配或尚未重启，请重新安装最新安装包，或重启朗读服务后再打开 WPS。");
       }
-      throw new Error("本地朗读服务返回了无法识别的数据，接口：" + path + "。请重启 WPS 和 wps-tts.service 后重试。");
+      throw new Error("本地朗读服务返回了无法识别的数据，接口：" + path + "。请重启 WPS 和朗读服务后重试。");
     }
   }
 
@@ -446,11 +445,6 @@
       notify("没有可朗读的文本，请确认文档中有正文内容。");
       return;
     }
-    if (normalized.length > MAX_TEXT_LENGTH) {
-      notify("文档内容过长，请缩短朗读范围后重试。");
-      return;
-    }
-
     var segments = splitSentences(source);
     if (!segments.length) {
       notify("没有可朗读的完整语句。");
@@ -653,6 +647,16 @@
   }
 
   function onGetPressed(control) {
+    var id = controlId(control);
+    if (id === "modeContinuousItem") {
+      return readMode === "continuous";
+    }
+    if (id === "modePageItem") {
+      return readMode === "page";
+    }
+    if (id === "rate075" || id === "rate10" || id === "rate12" || id === "rate15") {
+      return rateIdForValue(rate) === id;
+    }
     return false;
   }
 
@@ -675,19 +679,8 @@
     if (id === "modeMenu") {
       return "朗读方式 " + (readMode === "page" ? "当页朗读" : "连页朗读");
     }
-    if (id === "modeContinuousItem") {
-      return (readMode === "continuous" ? "✓ " : "") + "连页朗读";
-    }
-    if (id === "modePageItem") {
-      return (readMode === "page" ? "✓ " : "") + "当页朗读";
-    }
     if (id === "rateMenu") {
       return "朗读语速 " + rateLabelForValue(rate);
-    }
-    for (var i = 0; i < RATE_OPTIONS.length; i += 1) {
-      if (RATE_OPTIONS[i].id === id) {
-        return (rateIdForValue(rate) === id ? "✓ " : "") + RATE_OPTIONS[i].label;
-      }
     }
     return "";
   }
@@ -696,7 +689,7 @@
     try {
       var health = await request("/health");
       if (!health.version) {
-        notify("本地朗读服务版本较旧或尚未重启。请重新安装最新安装包，或重启 wps-tts.service 后再打开 WPS。", "服务状态", "warning");
+        notify("本地朗读服务版本较旧或尚未重启。请重新安装最新安装包，或重启朗读服务后再打开 WPS。", "服务状态", "warning");
         return;
       }
       if (health.ok) {
@@ -763,7 +756,7 @@
       height: 720,
       message: "面向 WPS Office 的本地离线文档朗读加载项。",
       fields: [
-        { label: "版本", value: "1.1.2" },
+        { label: "版本", value: "1.1.3" },
         { label: "发布日期", value: "20260521" },
         { label: "开发者", value: "Zhang Jingyao" },
         { label: "软件包", value: "wps-read-aloud-comate" },

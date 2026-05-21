@@ -115,8 +115,8 @@ def check_linux_package(target: dict, artifact: Path) -> None:
         f"{app_root}/voices/sherpa/vits-zh-hf-fanchen-C/vits-zh-hf-fanchen-C.onnx",
         f"{app_root}/version.json",
         config_path,
-        "lib/systemd/system/wps-tts.service",
-        "usr/bin/wps-read-aloud-register",
+        "lib/systemd/system/wps-read-aloud-comate.service",
+        "usr/bin/wps-read-aloud-comate-register",
     }
     missing = sorted(required - data_names)
     if missing:

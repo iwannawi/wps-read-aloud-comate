@@ -8,8 +8,11 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] preinst $*"
 
 APP_DIR="@APP_ROOT@"
 CONFIG_DIR="@CONFIG_DIR@"
-SERVICE_FILE="/lib/systemd/system/wps-tts.service"
-REGISTER_BIN="/usr/bin/wps-read-aloud-register"
+SERVICE_NAME="@SERVICE_NAME@"
+LEGACY_SERVICE_NAME="@LEGACY_SERVICE_NAME@"
+SERVICE_FILE="/lib/systemd/system/${SERVICE_NAME}"
+LEGACY_SERVICE_FILE="/lib/systemd/system/${LEGACY_SERVICE_NAME}"
+REGISTER_BIN="@REGISTER_BIN@"
 MARKER="${APP_DIR}/.wps-read-aloud-comate"
 LEGACY_MARKER="${APP_DIR}/.wps-read-aloud-zhangjingyao"
 PORT="19860"
@@ -45,6 +48,7 @@ mkdir -p /var/log 2>/dev/null
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] legacy maintainer script compatibility wrapper $*"
   if command -v systemctl >/dev/null 2>&1; then
     systemctl disable --now wps-tts.service >/dev/null 2>&1 || true
+    systemctl disable --now wps-read-aloud-comate.service >/dev/null 2>&1 || true
     systemctl daemon-reload >/dev/null 2>&1 || true
   fi
 } >> "${LOG_FILE}" 2>&1
@@ -71,6 +75,13 @@ service_file_owned() {
   }
 }
 
+legacy_service_file_owned() {
+  [[ -f "${LEGACY_SERVICE_FILE}" ]] && {
+    grep -q "wps-read-aloud" "${LEGACY_SERVICE_FILE}" 2>/dev/null ||
+    grep -q "wps-tts-daemon" "${LEGACY_SERVICE_FILE}" 2>/dev/null
+  }
+}
+
 port_looks_like_ours() {
   local response
   response="$(
@@ -87,7 +98,7 @@ if is_upgrade_or_reinstall "${1:-}"; then
   if (
     exec 3<>/dev/tcp/127.0.0.1/${PORT}
   ) 2>/dev/null; then
-    if ! systemctl is-active --quiet wps-tts.service 2>/dev/null && ! { owned_app_dir && service_file_owned && port_looks_like_ours; }; then
+    if ! port_looks_like_ours; then
       echo "安装已停止：127.0.0.1:${PORT} 已被其他程序占用。"
       echo "为避免影响其他软件，请释放该端口后再安装。"
       exit 1

@@ -1806,17 +1806,17 @@ func friendlyError(err error) string {
 	case strings.Contains(msg, "no available tts engine"):
 		return "朗读引擎不可用，请重新安装对应系统的加载项安装包，或联系管理员检查安装目录下的 engines 和 voices。"
 	case strings.Contains(msg, "sherpa-onnx failed"):
-		return "Sherpa-onnx 语音引擎启动失败，已记录到系统日志。请联系管理员执行 journalctl -u wps-tts.service -n 80 --no-pager 查看原因。"
+		return "Sherpa-onnx 语音引擎启动失败，已记录到系统日志。请联系管理员执行 journalctl -u wps-read-aloud-comate.service -n 80 --no-pager 查看原因。"
 	case strings.Contains(msg, "no available audio player"):
 		return "系统音频播放器不可用，请确认系统已安装 aplay、pw-play 或 paplay，并检查声卡输出是否正常。"
 	case strings.Contains(msg, "prepare audio file failed"):
-		return "系统音频临时文件权限设置失败，请联系管理员查看 wps-tts.service 日志。"
+		return "系统音频临时文件权限设置失败，请联系管理员查看朗读服务日志。"
 	case strings.Contains(msg, "audio playback failed"):
-		return "系统音频播放失败，请检查扬声器、声卡输出和系统音量；如仍失败，请联系管理员查看 wps-tts.service 日志。"
+		return "系统音频播放失败，请检查扬声器、声卡输出和系统音量；如仍失败，请联系管理员查看朗读服务日志。"
 	case errors.Is(err, context.Canceled):
 		return "朗读已取消。"
 	default:
-		return "朗读失败，请稍后重试；如果仍失败，请联系管理员查看 wps-tts.service 日志。"
+		return "朗读失败，请稍后重试；如果仍失败，请联系管理员查看朗读服务日志。"
 	}
 }
 

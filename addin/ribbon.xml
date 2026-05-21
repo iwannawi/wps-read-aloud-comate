@@ -9,16 +9,16 @@
         </group>
         <group id="readModeGroup" label="朗读范围">
           <menu id="modeMenu" label="朗读方式" size="large" getImage="ribbon.GetImage" getEnabled="ribbon.GetEnabled" screentip="朗读方式" supertip="选择连页朗读或当页朗读，默认连页朗读。">
-            <button id="modeContinuousItem" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
-            <button id="modePageItem" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <toggleButton id="modeContinuousItem" label="连页朗读" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
+            <toggleButton id="modePageItem" label="当页朗读" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
           </menu>
         </group>
         <group id="settingGroup" label="朗读设置">
           <menu id="rateMenu" getLabel="ribbon.GetLabel" size="large" getImage="ribbon.GetImage" getEnabled="ribbon.GetEnabled" screentip="朗读语速" supertip="选择朗读语速，默认 1.2x。">
-            <button id="rate075" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
-            <button id="rate10" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
-            <button id="rate12" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
-            <button id="rate15" getLabel="ribbon.GetLabel" onAction="ribbon.OnAction"/>
+            <toggleButton id="rate075" label="0.75x" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
+            <toggleButton id="rate10" label="1x" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
+            <toggleButton id="rate12" label="1.2x" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
+            <toggleButton id="rate15" label="1.5x" getPressed="ribbon.GetPressed" onAction="ribbon.OnAction"/>
           </menu>
         </group>
         <group id="serviceGroup" label="服务">

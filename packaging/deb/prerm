@@ -6,6 +6,8 @@ mkdir -p /var/log
 exec > >(tee -a "${LOG_FILE}") 2>&1
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] prerm $*"
 
+SERVICE_NAME="@SERVICE_NAME@"
+
 if [[ "${1:-}" = "remove" || "${1:-}" = "deconfigure" ]]; then
-  systemctl disable --now wps-tts.service || true
+  systemctl disable --now "${SERVICE_NAME}" || true
 fi
