@@ -96,6 +96,7 @@
 
 - 使用 scripts/push_github.ps1 和 scripts/publish_github_release.ps1，不再生成一次性脚本。
 - 推送优先使用 GitHub CLI token，通过临时 http.extraHeader 注入本次 Git 命令。
+- GitHub CLI token 通过只读 ls-remote 校验不代表具有 push 权限；如果 push 返回 “Invalid username or token”，不要反复重试同一个 token，应改用具备 Contents 读写权限的 token 或重新授权。
 - 如果 Git Credential Manager 凭据失效，不重复运行同一失败路径。
 - 仓库重命名后，常驻推送脚本仍可能被旧 HTTPS 凭据带偏并报 “Invalid username or token”。此时直接读取 gh auth token，禁用 credential.helper，并用临时 http.extraHeader 推送。
 - Release 发布优先使用 GitHub CLI；curl REST 路径返回 401 时不要反复重试。
