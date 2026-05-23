@@ -23,6 +23,26 @@ public static class WpsReadAloudDpi {
 }
 "@
   [WpsReadAloudDpi]::Enable()
+  Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class WpsReadAloudWindowIcon {
+  [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+  public static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
+  [DllImport("user32.dll")]
+  public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+  public static void SetAppId() {
+    try { SetCurrentProcessExplicitAppUserModelID("ZhangJingyao.WpsReadAloudComate"); } catch {}
+  }
+  public static void SetIcon(IntPtr handle, IntPtr icon) {
+    try {
+      SendMessage(handle, 0x0080, new IntPtr(0), icon);
+      SendMessage(handle, 0x0080, new IntPtr(1), icon);
+    } catch {}
+  }
+}
+"@
+  [WpsReadAloudWindowIcon]::SetAppId()
 }
 catch {
 }
@@ -109,29 +129,28 @@ function Update-ProgressFromFile {
 }
 
 $workingArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-$formWidth = [Math]::Min(1180, [Math]::Max(980, $workingArea.Width - 60))
-$formHeight = [Math]::Min(860, [Math]::Max(740, $workingArea.Height - 60))
+$formWidth = [Math]::Min(1180, [Math]::Max(1100, $workingArea.Width - 80))
 $margin = 48
-$layoutWidth = [Math]::Max(1040, $formWidth - 18)
+$layoutWidth = $formWidth
 $contentWidth = $layoutWidth - ($margin * 2)
 
 if ($script:headerImage) {
   $imageRatio = $script:headerImage.Width / [double]$script:headerImage.Height
   $headerHeight = [int][Math]::Round($layoutWidth / $imageRatio)
-  $headerHeight = [Math]::Min(410, [Math]::Max(300, $headerHeight))
 }
 else {
-  $headerHeight = 320
+  $headerHeight = 460
 }
 
-$pathY = $headerHeight + 34
-$progressY = $pathY + 82
-$actionY = $progressY + 58
-$detailY = $actionY + 42
-$detailBoxY = $detailY + 58
-$detailBoxHeight = 220
-$buttonY = $detailBoxY + $detailBoxHeight + 34
-$layoutHeight = $buttonY + 82
+$pathY = $headerHeight + 16
+$progressY = $pathY + 48
+$actionY = $progressY + 36
+$detailY = $actionY + 30
+$detailBoxY = $detailY + 36
+$detailBoxHeight = 125
+$buttonY = $detailBoxY + $detailBoxHeight + 20
+$layoutHeight = $buttonY + 56
+$formHeight = $layoutHeight
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "WPS 文档朗读助手 安装程序"
@@ -142,7 +161,7 @@ $form.MinimizeBox = $false
 $form.ClientSize = New-Object System.Drawing.Size($formWidth, $formHeight)
 $form.MinimumSize = New-Object System.Drawing.Size(940, 700)
 $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::None
-$form.AutoScroll = $true
+$form.AutoScroll = $false
 $form.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 10, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Point)
 $form.BackColor = [System.Drawing.Color]::FromArgb(248, 250, 253)
 if (Test-Path $iconPath) {
@@ -293,6 +312,11 @@ $timer.Add_Tick({
 })
 
 $form.Add_Shown({
+  try {
+    if ($form.Icon) {
+      [WpsReadAloudWindowIcon]::SetIcon($form.Handle, $form.Icon.Handle)
+    }
+  } catch {}
   try {
     if (!(Test-Path $installScript)) {
       throw "安装包不完整：未找到 install.ps1。"

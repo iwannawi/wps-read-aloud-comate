@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = os.environ.get("VERSION", "1.1.8")
+VERSION = os.environ.get("VERSION", "1.1.9")
 RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260523")
 WINDOWS_ARCH = os.environ.get("WINDOWS_ARCH", "386")
 ARCH_LABEL = "x86" if WINDOWS_ARCH in {"386", "x86"} else WINDOWS_ARCH

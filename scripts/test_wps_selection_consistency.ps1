@@ -33,7 +33,7 @@ function Get-SearchTexts([string]$Text) {
   return $values
 }
 
-function New-Segment([string]$Raw, [int]$Base, [int]$Start, [int]$End) {
+function New-Segment([string]$Raw, [int]$Base, [int]$Start, [int]$End, [int]$ScopeStart = 0, [int]$ScopeEnd = 0) {
   if ($End -le $Start) { return $null }
   $text = $Raw.Substring($Start, $End - $Start)
   $trimmed = $text.Trim()
@@ -48,9 +48,11 @@ function New-Segment([string]$Raw, [int]$Base, [int]$Start, [int]$End) {
   $segmentEnd = $Base + [Math]::Min($localEnd, $localStart + $MaxSentenceLength)
 
   [pscustomobject]@{
-    Text  = $segmentText
-    Start = $Base + $localStart
-    End   = $segmentEnd
+    Text       = $segmentText
+    Start      = $Base + $localStart
+    End        = $segmentEnd
+    ScopeStart = if ($ScopeStart -gt 0) { $ScopeStart } else { $Base }
+    ScopeEnd   = if ($ScopeEnd -gt 0) { $ScopeEnd } else { $Base + $Raw.Length }
   }
 }
 
@@ -61,7 +63,7 @@ function Split-ReadSegments([string]$Raw, [int]$Base, [int]$RangeEnd = 0) {
   foreach ($match in [regex]::Matches($Raw, $SentenceEndPattern)) {
     $matched = $true
     $end = $match.Index + $match.Length
-    $segment = New-Segment -Raw $Raw -Base $Base -Start $start -End $end
+    $segment = New-Segment -Raw $Raw -Base $Base -Start $start -End $end -ScopeStart $Base -ScopeEnd $RangeEnd
     if ($null -ne $segment -and $RangeEnd -gt 0 -and $segment.End -gt $RangeEnd) { $segment.End = $RangeEnd }
     if ($null -ne $segment) { $segments.Add($segment) }
     $start = $end
@@ -69,13 +71,15 @@ function Split-ReadSegments([string]$Raw, [int]$Base, [int]$RangeEnd = 0) {
   if (!$matched -and ![string]::IsNullOrWhiteSpace($Raw)) {
     $trimmed = $Raw.Trim()
     $segments.Add([pscustomobject]@{
-      Text  = if ($trimmed.Length -gt $MaxSentenceLength) { $trimmed.Substring(0, $MaxSentenceLength) } else { $trimmed }
-      Start = $Base
-      End   = if ($RangeEnd -gt 0) { $RangeEnd } else { $Base + $Raw.Length }
+      Text       = if ($trimmed.Length -gt $MaxSentenceLength) { $trimmed.Substring(0, $MaxSentenceLength) } else { $trimmed }
+      Start      = $Base
+      End        = if ($RangeEnd -gt 0) { $RangeEnd } else { $Base + $Raw.Length }
+      ScopeStart = $Base
+      ScopeEnd   = if ($RangeEnd -gt 0) { $RangeEnd } else { $Base + $Raw.Length }
     })
     return $segments
   }
-  $tail = New-Segment -Raw $Raw -Base $Base -Start $start -End $Raw.Length
+  $tail = New-Segment -Raw $Raw -Base $Base -Start $start -End $Raw.Length -ScopeStart $Base -ScopeEnd $RangeEnd
   if ($null -ne $tail -and $RangeEnd -gt 0 -and $tail.End -gt $RangeEnd) { $tail.End = $RangeEnd }
   if ($null -ne $tail) { $segments.Add($tail) }
   return $segments
@@ -94,6 +98,8 @@ function Get-ParagraphSegments($Doc) {
         Text  = if ($trimmed.Length -gt $MaxSentenceLength) { $trimmed.Substring(0, $MaxSentenceLength) } else { $trimmed }
         Start = [int]$range.Start
         End   = [int]$range.End
+        ScopeStart = [int]$range.Start
+        ScopeEnd   = [int]$range.End
       })
     } else {
       $parts = Split-ReadSegments -Raw $text -Base ([int]$range.Start) -RangeEnd ([int]$range.End)
@@ -210,11 +216,12 @@ function Select-SegmentRange($Doc, $App, $Segment) {
   $docEnd = [int]$Doc.Content.End
   $segmentStart = [int]$Segment.Start
   $segmentEnd = [int]$Segment.End
+  $scopeStart = if ($null -ne $Segment.ScopeStart) { [int]$Segment.ScopeStart } else { $segmentStart }
+  $scopeEnd = if ($null -ne $Segment.ScopeEnd) { [int]$Segment.ScopeEnd } else { $segmentEnd }
   $attempts = @(
     @([Math]::Max(0, $segmentStart), [Math]::Min($docEnd, $segmentEnd + 2)),
-    @([Math]::Max(0, $segmentStart - 20), [Math]::Min($docEnd, $segmentEnd + 20)),
-    @([Math]::Max(0, $segmentStart - 120), [Math]::Min($docEnd, $segmentEnd + 120)),
-    @([Math]::Max(0, $segmentStart - 300), [Math]::Min($docEnd, $segmentEnd + 300))
+    @([Math]::Max(0, $scopeStart), [Math]::Min($docEnd, $scopeEnd)),
+    @([Math]::Max(0, $scopeStart - 2), [Math]::Min($docEnd, $scopeEnd + 2))
   )
   foreach ($attempt in $attempts) {
     if ([int]$attempt[1] -le [int]$attempt[0]) { continue }
@@ -227,7 +234,7 @@ function Select-SegmentRange($Doc, $App, $Segment) {
           $foundStart = [int]$search.Start
           $foundEnd = [int]$search.End
           if ($foundStart -lt [int]$attempt[0] -or $foundEnd -gt [int]$attempt[1]) { continue }
-          if ($foundStart -lt ($segmentStart - 300) -or $foundEnd -gt ($segmentEnd + 300)) { continue }
+          if ($foundStart -lt ($scopeStart - 2) -or $foundEnd -gt ($scopeEnd + 2)) { continue }
           $search.Select()
           Start-Sleep -Milliseconds 120
           $selectedText = Normalize-Text ([string]$App.Selection.Range.Text)

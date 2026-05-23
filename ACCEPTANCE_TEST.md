@@ -2,27 +2,27 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-版本：1.1.8
+版本：1.1.9
 
 ## 环境矩阵
 
 | CPU 架构 + 操作系统 | WPS 要求 | 安装包 |
 | --- | --- | --- |
-| x86/x64 Windows 10/11 | WPS Office 2019 或更高版本 | wps-read-aloud-comate_1.1.8_windows.exe |
-| x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本 | wps-read-aloud-comate_1.1.8_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本 | wps-read-aloud-comate_1.1.8_arm64.deb |
-| x64 UOS V20 | WPS Office 2019 for Linux 或更高版本 | cn.wps-read-aloud-comate_1.1.8_amd64.deb |
-| ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本 | cn.wps-read-aloud-comate_1.1.8_arm64.deb |
+| x86/x64 Windows 10/11 | WPS Office 2019 或更高版本 | wps-read-aloud-comate_1.1.9_windows.exe |
+| x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本 | wps-read-aloud-comate_1.1.9_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本 | wps-read-aloud-comate_1.1.9_arm64.deb |
+| x64 UOS V20 | WPS Office 2019 for Linux 或更高版本 | cn.wps-read-aloud-comate_1.1.9_amd64.deb |
+| ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本 | cn.wps-read-aloud-comate_1.1.9_arm64.deb |
 
 ## 安装验收
 
 | CPU 架构 + 操作系统 | 操作 |
 | --- | --- |
-| x86/x64 Windows 10/11 | 运行 wps-read-aloud-comate_1.1.8_windows.exe |
-| x64 银河麒麟 V10 及以上 | sudo dpkg -i wps-read-aloud-comate_1.1.8_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i wps-read-aloud-comate_1.1.8_arm64.deb |
-| x64 UOS V20 | sudo dpkg -i cn.wps-read-aloud-comate_1.1.8_amd64.deb |
-| ARM64 UOS V20 | sudo dpkg -i cn.wps-read-aloud-comate_1.1.8_arm64.deb |
+| x86/x64 Windows 10/11 | 运行 wps-read-aloud-comate_1.1.9_windows.exe |
+| x64 银河麒麟 V10 及以上 | sudo dpkg -i wps-read-aloud-comate_1.1.9_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i wps-read-aloud-comate_1.1.9_arm64.deb |
+| x64 UOS V20 | sudo dpkg -i cn.wps-read-aloud-comate_1.1.9_amd64.deb |
+| ARM64 UOS V20 | sudo dpkg -i cn.wps-read-aloud-comate_1.1.9_arm64.deb |
 
 预期结果：
 
@@ -87,7 +87,7 @@
 
 示例文本：
 
-    这是 WPS 2026 read aloud test，版本是 v1.1.8。
+    这是 WPS 2026 read aloud test，版本是 v1.1.9。
 
 预期结果：
 

@@ -301,11 +301,12 @@
   function rangeText(doc, start, end) {
     var range = doc.Range && doc.Range(start, end);
     if (!range) {
-      return { text: "", start: start };
+      return { text: "", start: start, end: end };
     }
     return {
       text: range.Text !== undefined ? String(range.Text || "") : "",
-      start: range.Start !== undefined ? Number(range.Start) : start
+      start: range.Start !== undefined ? Number(range.Start) : start,
+      end: range.End !== undefined ? Number(range.End) : end
     };
   }
 
@@ -336,6 +337,10 @@
   }
 
   function splitSentences(source) {
+    var paragraphSegments = splitParagraphSentences(source);
+    if (paragraphSegments.length) {
+      return paragraphSegments;
+    }
     var raw = String(source.text || "");
     var base = Number(source.start || 0);
     var segments = [];
@@ -358,7 +363,70 @@
     return segments;
   }
 
-  function pushSegment(segments, raw, base, start, end) {
+  function splitParagraphSentences(source) {
+    var segments = [];
+    try {
+      var doc = activeDocument();
+      var paragraphs = doc.Paragraphs;
+      var count = paragraphs && paragraphs.Count !== undefined ? Number(paragraphs.Count) : 0;
+      if (!count || !doc.Range) {
+        return segments;
+      }
+      var sourceStart = Number(source.start || documentStart(doc));
+      var sourceEnd = Number(source.end || documentEnd(doc));
+      for (var i = 1; i <= count && segments.length < MAX_SENTENCES; i += 1) {
+        var paragraph = null;
+        if (typeof paragraphs.Item === "function") {
+          paragraph = paragraphs.Item(i);
+        } else if (typeof paragraphs === "function") {
+          paragraph = paragraphs(i);
+        } else {
+          paragraph = paragraphs[i];
+        }
+        var paragraphRange = paragraph && paragraph.Range ? paragraph.Range : paragraph;
+        if (!paragraphRange || paragraphRange.Start === undefined || paragraphRange.End === undefined) {
+          continue;
+        }
+        var scopeStart = Number(paragraphRange.Start);
+        var scopeEnd = Number(paragraphRange.End);
+        if (scopeEnd <= sourceStart) {
+          continue;
+        }
+        if (scopeStart >= sourceEnd) {
+          break;
+        }
+        var start = Math.max(scopeStart, sourceStart);
+        var end = Math.min(scopeEnd, sourceEnd);
+        if (end <= start) {
+          continue;
+        }
+        var range = doc.Range(start, end);
+        var text = range && range.Text !== undefined ? String(range.Text || "") : "";
+        pushSegmentsFromRaw(segments, text, start, scopeStart, scopeEnd);
+      }
+    } catch (_) {
+      return [];
+    }
+    return segments;
+  }
+
+  function pushSegmentsFromRaw(segments, raw, base, scopeStart, scopeEnd) {
+    var start = 0;
+    var match;
+    SENTENCE_END.lastIndex = 0;
+    while ((match = SENTENCE_END.exec(raw)) !== null) {
+      var isObject = NON_TEXT_OBJECT.test(match[0]);
+      var end = isObject ? match.index : match.index + match[0].length;
+      pushSegment(segments, raw, base, start, end, scopeStart, scopeEnd);
+      if (segments.length >= MAX_SENTENCES) {
+        return;
+      }
+      start = match.index + match[0].length;
+    }
+    pushSegment(segments, raw, base, start, raw.length, scopeStart, scopeEnd);
+  }
+
+  function pushSegment(segments, raw, base, start, end, scopeStart, scopeEnd) {
     var text = raw.slice(start, end);
     var cleaned = readableSegmentText(text);
     var trimmed = cleaned.trim();
@@ -372,7 +440,9 @@
     segments.push({
       text: trimmed.length > MAX_SENTENCE_LENGTH ? trimmed.slice(0, MAX_SENTENCE_LENGTH) : trimmed,
       start: base + localStart,
-      end: base + Math.min(localEnd, localStart + MAX_SENTENCE_LENGTH)
+      end: base + Math.min(localEnd, localStart + MAX_SENTENCE_LENGTH),
+      scopeStart: scopeStart !== undefined ? Number(scopeStart) : base + localStart,
+      scopeEnd: scopeEnd !== undefined ? Number(scopeEnd) : base + Math.min(localEnd, localStart + MAX_SENTENCE_LENGTH)
     });
   }
 
@@ -440,11 +510,12 @@
     var docEnd = documentEnd(doc);
     var segmentStart = Number(segment.start || docStart);
     var segmentEnd = Number(segment.end || segmentStart);
+    var scopeStart = Math.max(docStart, Number(segment.scopeStart !== undefined ? segment.scopeStart : segmentStart));
+    var scopeEnd = Math.min(docEnd, Number(segment.scopeEnd !== undefined ? segment.scopeEnd : segmentEnd));
     var attempts = [
       [Math.max(docStart, segmentStart), Math.min(docEnd, segmentEnd + 2)],
-      [Math.max(docStart, segmentStart - 20), Math.min(docEnd, segmentEnd + 20)],
-      [Math.max(docStart, segmentStart - 120), Math.min(docEnd, segmentEnd + 120)],
-      [Math.max(docStart, segmentStart - 300), Math.min(docEnd, segmentEnd + 300)]
+      [scopeStart, scopeEnd],
+      [Math.max(docStart, scopeStart - 2), Math.min(docEnd, scopeEnd + 2)]
     ];
     for (var i = 0; i < attempts.length; i += 1) {
       if (attempts[i][1] <= attempts[i][0]) {
@@ -489,7 +560,9 @@
       if (start < attempt[0] || end > attempt[1]) {
         return false;
       }
-      return start >= Number(segment.start || 0) - 300 && end <= Number(segment.end || 0) + 300;
+      var scopeStart = Number(segment.scopeStart !== undefined ? segment.scopeStart : segment.start || 0);
+      var scopeEnd = Number(segment.scopeEnd !== undefined ? segment.scopeEnd : segment.end || 0);
+      return start >= scopeStart - 2 && end <= scopeEnd + 2;
     } catch (_) {
       return false;
     }
@@ -865,7 +938,7 @@
       height: 720,
       message: "面向 WPS Office 的本地离线文档朗读加载项。",
       fields: [
-        { label: "版本", value: "1.1.8" },
+        { label: "版本", value: "1.1.9" },
         { label: "发布日期", value: "20260523" },
         { label: "开发者", value: "Zhang Jingyao" },
         { label: "软件包", value: "wps-read-aloud-comate" },
