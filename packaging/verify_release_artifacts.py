@@ -166,6 +166,8 @@ def check_windows_package(target: dict, artifact: Path) -> None:
             fail(f"Windows installer does not configure WPS OEM offline mode: {artifact.name}")
         if "<jsplugin name=" not in install_script or "jspluginonline name=" in install_script:
             fail(f"Windows installer is not using publish offline jsplugin mode: {artifact.name}")
+        if "New-OfflineAddinPackage" not in install_script or "tar.exe" not in install_script:
+            fail(f"Windows installer does not create a real offline 7z add-in package: {artifact.name}")
         if "disableFileCheckIntercept" not in install_script:
             fail(f"Windows installer misses the offline mode file-check OEM switch: {artifact.name}")
         if "WPSReadAloudComate" not in uninstall_script or "Uninstall" not in install_script:

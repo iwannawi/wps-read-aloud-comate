@@ -474,6 +474,49 @@ function ConvertTo-FileUri {
   return ([System.Uri]([System.IO.Path]::GetFullPath($Path))).AbsoluteUri
 }
 
+function New-OfflineAddinPackage {
+  param(
+    [string]$JsDir,
+    [string]$FolderName,
+    [string]$OutputPath
+  )
+
+  $SourceDir = Join-Path $JsDir $FolderName
+  if (!(Test-Path $SourceDir -PathType Container)) {
+    throw "安装包不完整：未找到离线加载项目录 $SourceDir。"
+  }
+  $Tar = Get-Command "tar.exe" -ErrorAction SilentlyContinue
+  if (!$Tar) {
+    throw "系统缺少 tar.exe，无法生成 WPS 离线加载项包。请确认系统为 Windows 10/11。"
+  }
+  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+  $OutputDir = Split-Path -Parent $OutputPath
+  if ($OutputDir) {
+    New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+  }
+  & $Tar.Source -a -cf $OutputPath -C $JsDir $FolderName
+  if ($LASTEXITCODE -ne 0 -or !(Test-Path $OutputPath -PathType Leaf)) {
+    throw "生成 WPS 离线加载项包失败。"
+  }
+  $Stream = [System.IO.File]::OpenRead($OutputPath)
+  try {
+    $Header = New-Object byte[] 6
+    $Read = $Stream.Read($Header, 0, $Header.Length)
+    $Expected = [byte[]](0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c)
+    if ($Read -ne 6) {
+      throw "生成的离线加载项包为空。"
+    }
+    for ($i = 0; $i -lt 6; $i += 1) {
+      if ($Header[$i] -ne $Expected[$i]) {
+        throw "生成的离线加载项包不是有效的 7z 格式。"
+      }
+    }
+  }
+  finally {
+    $Stream.Close()
+  }
+}
+
 function Set-IniSectionValue {
   param(
     [string]$Content,
@@ -689,17 +732,20 @@ try {
   $AddinVersion = $VersionInfo.version
   Get-ChildItem -Path $JsDir -Directory -Filter "wps-read-aloud_*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
   Get-ChildItem -Path $JsDir -Directory -Filter "$AddinDisplayName`_*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-  $Target = Join-Path $JsDir ($AddinDisplayName + "_" + $AddinVersion)
+  $OfflineFolderName = $AddinDisplayName + "_" + $AddinVersion
+  $Target = Join-Path $JsDir $OfflineFolderName
   New-Item -ItemType Directory -Force -Path $Target | Out-Null
   Copy-Item -Path (Join-Path $InstallDir "addin\*") -Destination $Target -Recurse -Force
   Write-WindowsRuntimeConfig -Path (Join-Path $Target "assets\runtime-config.js") -Root $InstallDir -Launcher $Launcher -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
   Write-WindowsRuntimeConfig -Path (Join-Path $InstallDir "addin\assets\runtime-config.js") -Root $InstallDir -Launcher $Launcher -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
+  $OfflinePackagePath = Join-Path $InstallDir ($OfflineFolderName + ".7z")
+  New-OfflineAddinPackage -JsDir $JsDir -FolderName $OfflineFolderName -OutputPath $OfflinePackagePath
 
   $PublishXml = Join-Path $JsDir "publish.xml"
   $PluginsXml = Join-Path $JsDir "jsplugins.xml"
   $KnownNames = @($AddinInternalName, $AddinDisplayName, "WPS 文档朗读助手", "wps-read-aloud-comate", "wps-read-aloud-xc", "wps-read-aloud-zhangjingyao")
   Remove-WpsPluginEntry -Path $PublishXml -Names $KnownNames
-  $OfflinePackageUrl = (ConvertTo-FileUri -Path (Join-Path $InstallDir "$AddinDisplayName`_$AddinVersion.7z"))
+  $OfflinePackageUrl = (ConvertTo-FileUri -Path $OfflinePackagePath)
   $OfflineEntry = '<jsplugin name="' + (Escape-XmlAttribute $AddinDisplayName) + '" type="wps" version="' + (Escape-XmlAttribute $AddinVersion) + '" url="' + (Escape-XmlAttribute $OfflinePackageUrl) + '" desc="' + (Escape-XmlAttribute $AddinDescription) + '"/>'
   Set-WpsPluginEntry -Path $PluginsXml -Entry $OfflineEntry -Names $KnownNames
   try {

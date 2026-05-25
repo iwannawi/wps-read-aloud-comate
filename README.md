@@ -10,11 +10,11 @@
 
 | 目标 | CPU 架构 + 操作系统 | WPS 要求 | 安装包 |
 | --- | --- | --- | --- |
-| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.16_windows.exe |
-| 银河麒麟 | x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.16_amd64.deb |
-| 银河麒麟 | ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.16_arm64.deb |
-| UOS | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.16_amd64.deb |
-| UOS | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.16_arm64.deb |
+| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_windows.exe |
+| 银河麒麟 | x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_amd64.deb |
+| 银河麒麟 | ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_arm64.deb |
+| UOS | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.17_amd64.deb |
+| UOS | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.17_arm64.deb |
 
 通用要求：
 
@@ -104,15 +104,15 @@
 
 | 目标 | 命令或操作 |
 | --- | --- |
-| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.1.16_windows.exe |
-| x64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.16_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.16_arm64.deb |
-| x64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.16_amd64.deb |
-| ARM64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.16_arm64.deb |
+| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.1.17_windows.exe |
+| x64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.17_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.17_arm64.deb |
+| x64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.17_amd64.deb |
+| ARM64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.17_arm64.deb |
 
 Windows 安装程序会检测 WPS 安装路径、版本和可执行文件位数。加载项通过本地服务工作，不注入 WPS 进程，因此同一套 Windows 本地服务可服务 32 位和 64 位 WPS。Windows 端需要修改 WPS 安装目录下的 office6/cfgs/oem.ini，安装器会请求管理员权限。
 
-Windows 版本不会写入开机自启动项，不创建常驻后台服务。安装时会把加载项文件复制到当前用户 jsaddons 下的“文档朗读助手_版本号”目录，写入离线 jsplugins.xml，并在 WPS 的 oem.ini 中配置 JsApiPlugin、JSPluginsServer 和离线模式文件检查开关。安装完成后需要重启电脑，让 WPS 重新读取 OEM 配置。19860 本地服务只在点击“开始朗读”“状态检查”等功能时按需启动；停止朗读只停止当前朗读会话、播放和正在运行的语音合成子进程。卸载入口会写入开始菜单“WPS文档朗读助手”文件夹和系统“应用和功能”，卸载时清理安装文件、WPS 加载项配置、旧版自启动项、旧计划任务、注册表项和本项目写入的 OEM 指向项。
+Windows 版本不会写入开机自启动项，不创建常驻后台服务。安装时会把加载项文件复制到当前用户 jsaddons 下的“文档朗读助手_版本号”目录，并生成同名 .7z 离线包，写入离线 jsplugins.xml，然后在 WPS 的 oem.ini 中配置 JsApiPlugin、JSPluginsServer 和离线模式文件检查开关。安装完成后需要重启电脑，让 WPS 重新读取 OEM 配置。19860 本地服务只在点击“开始朗读”“状态检查”等功能时按需启动；停止朗读只停止当前朗读会话、播放和正在运行的语音合成子进程。卸载入口会写入开始菜单“WPS文档朗读助手”文件夹和系统“应用和功能”，卸载时清理安装文件、WPS 加载项配置、旧版自启动项、旧计划任务、注册表项和本项目写入的 OEM 指向项。
 
 Windows WPS 首次信任第三方加载项时，可能显示 WPS 原生安全确认框。该弹窗由 Windows 版 WPS 客户端安全策略生成，项目不能合规地绕过或伪造关闭。安装脚本会保留已允许记录，升级安装时不主动清除授权缓存，尽量避免重复出现。
 

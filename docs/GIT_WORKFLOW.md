@@ -37,15 +37,15 @@ Git 保存源码、脚本、配置、文档和许可证。
 | --- | --- | --- |
 | 主版本 | 架构重构、安装方式不兼容、核心能力大幅改变 | 2.0.0 |
 | 次版本 | 新平台、新安装包类型、重要能力升级、交付规范升级 | 1.1.0 |
-| 修订号 | 缺陷修复、文案优化、兼容性小改 | 1.1.16 |
+| 修订号 | 缺陷修复、文案优化、兼容性小改 | 1.1.17 |
 
 本项目从 1.1.12 开始按此规则发布。标签格式为：
 
-    v1.1.16-20260525
+    v1.1.17-20260525
 
 Release 名称格式为：
 
-    wps-read-aloud-comate 1.1.16 20260525
+    wps-read-aloud-comate 1.1.17 20260525
 
 ## 自动发布流程
 
@@ -66,11 +66,11 @@ Release 名称格式为：
 
 推送：
 
-    .\scripts\push_github.ps1 -Tag v1.1.16-20260525
+    .\scripts\push_github.ps1 -Tag v1.1.17-20260525
 
 发布 Release：
 
-    .\scripts\publish_github_release.ps1 -Version 1.1.16 -ReleaseDate 20260525
+    .\scripts\publish_github_release.ps1 -Version 1.1.17 -ReleaseDate 20260525
 
 脚本使用 HTTPS，不使用 SSH。认证优先读取 GitHub CLI，其次读取 Git Credential Manager。脚本不得把 token 写入源码、日志或 Git remote。
 
@@ -80,9 +80,9 @@ Release 名称格式为：
 
 正式发布必须同时交付：
 
-    wps-read-aloud-comate_1.1.16_windows.exe
-    wps-read-aloud-comate_1.1.16_amd64.deb
-    wps-read-aloud-comate_1.1.16_arm64.deb
-    cn.wps-read-aloud-comate_1.1.16_amd64.deb
-    cn.wps-read-aloud-comate_1.1.16_arm64.deb
+    wps-read-aloud-comate_1.1.17_windows.exe
+    wps-read-aloud-comate_1.1.17_amd64.deb
+    wps-read-aloud-comate_1.1.17_arm64.deb
+    cn.wps-read-aloud-comate_1.1.17_amd64.deb
+    cn.wps-read-aloud-comate_1.1.17_arm64.deb
 

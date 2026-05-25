@@ -41,6 +41,7 @@
 - 授权描述使用“WPS文档朗读助手加载项申请访问本机语音合成服务”。
 - Windows WPS 端使用 OEM + publish 离线模式：复制“文档朗读助手_版本号”目录，生成 jsplugins.xml，并将 oem.ini 的 JSPluginsServer 指向本地 jsplugins.xml。
 - Windows WPS 2019 离线模式需要 oem.ini 中的 disableFileCheckIntercept=true，否则可能无法完整生成或加载离线加载项。
+- 离线 jsplugin 的 url 必须指向可访问的 .7z 压缩包。只预置 name_version 目录但不生成真实 .7z 时，部分 Windows WPS 版本会看不到选项卡。Windows 10/11 可用系统自带 tar.exe 生成 7z 包，安装脚本必须校验 7z 文件头。
 - Windows 端停止朗读不能调用 /shutdown。停止朗读只调用 /read/stop，终止当前会话、播放和 sherpa-onnx 子进程。
 - 本机 Windows 环境中 python 命令可能被 Microsoft Store 应用执行别名接管，py 命令也可能不可用。构建和同步脚本优先使用 Codex 运行时 Python：C:\Users\zhangjingyao\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe。
 - Windows HTTP 根地址模式已废弃。它要求 WPS 打开时本地服务仍在运行，容易导致安装后稍晚打开 WPS 看不到选项卡。
