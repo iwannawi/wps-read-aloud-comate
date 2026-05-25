@@ -195,7 +195,7 @@
     }
     if (/Failed to fetch|NetworkError|Load failed|fetch/i.test(raw)) {
       return IS_WINDOWS_ON_DEMAND
-        ? "本地朗读服务未能按需启动。请确认安装目录完整，或重新安装 Windows 安装包。"
+        ? "本地朗读服务未运行。请确认安装目录完整，或重新安装 Windows 安装包。"
         : "本地朗读服务未连接，请确认安装已完成并重启 WPS。";
     }
     if (/AbortError|aborted|timeout/i.test(raw)) {
@@ -1105,7 +1105,7 @@
       height: 720,
       message: "面向 WPS Office 的本地离线文档朗读加载项。",
       fields: [
-        { label: "版本", value: "1.1.17" },
+        { label: "版本", value: "1.1.18" },
         { label: "发布日期", value: "20260525" },
         { label: "开发者", value: "Zhang Jingyao" },
         { label: "软件包", value: "wps-read-aloud-comate" },

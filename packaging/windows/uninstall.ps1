@@ -169,6 +169,8 @@ try {
   Remove-WpsOemConfig -Root $InstallDir
   Remove-Item -LiteralPath (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\WPS 文档朗读助手") -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\WPS文档朗读助手") -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs\WPS 文档朗读助手") -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs\WPS文档朗读助手") -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\WPSReadAloudComate" -Recurse -Force -ErrorAction SilentlyContinue
   Set-Location $env:TEMP
   Remove-InstallDirAfterExit -Root $InstallDir

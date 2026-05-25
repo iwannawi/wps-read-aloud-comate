@@ -10,11 +10,11 @@
 
 | 目标 | CPU 架构 + 操作系统 | WPS 要求 | 安装包 |
 | --- | --- | --- | --- |
-| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_windows.exe |
-| 银河麒麟 | x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_amd64.deb |
-| 银河麒麟 | ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.17_arm64.deb |
-| UOS | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.17_amd64.deb |
-| UOS | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.17_arm64.deb |
+| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.18_windows.exe |
+| 银河麒麟 | x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.18_amd64.deb |
+| 银河麒麟 | ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.18_arm64.deb |
+| UOS | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.18_amd64.deb |
+| UOS | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.18_arm64.deb |
 
 通用要求：
 
@@ -45,9 +45,9 @@
 | --- | --- | --- | --- |
 | 安装包 | exe 图形安装程序 | deb 安装包 | cn. 开头的 deb 安装包 |
 | 安装目录 | 当前用户目录，默认 %LOCALAPPDATA%\Programs\WPS Read Aloud Comate | /opt/wps-read-aloud-comate | /opt/apps/cn.wps-read-aloud-comate/files |
-| 服务启动 | 加载项采用 OEM 指向 jsplugins.xml 的 publish 离线模式；本地服务只在朗读、状态检查等功能调用时按需启动 | systemd 服务 wps-read-aloud-comate.service | systemd 服务 wps-read-aloud-comate.service |
+| 服务启动 | 加载项采用 publish.xml 在线发布模式；本地服务安装后立即启动，并随当前用户登录自动启动 | systemd 服务 wps-read-aloud-comate.service | systemd 服务 wps-read-aloud-comate.service |
 | 音频播放 | Windows 原生 WinMM 播放 WAV，停止时调用 WinMM 中断当前声音 | 按当前桌面音频环境探测 pw-play、paplay、aplay | 按当前桌面音频环境探测 pw-play、paplay、aplay |
-| WPS 加载项注册 | 写入当前用户 jsaddons 离线目录和 jsplugins.xml，并修改 WPS 安装目录 office6/cfgs/oem.ini | 注册到用户主目录下的 WPS jsaddons 配置 | 注册到用户主目录下的 WPS jsaddons 配置 |
+| WPS 加载项注册 | 写入当前用户 jsaddons 下的 publish.xml，地址指向 http://127.0.0.1:19860/addin/ | 注册到用户主目录下的 WPS jsaddons 配置 | 注册到用户主目录下的 WPS jsaddons 配置 |
 | 首次许可弹窗 | Windows WPS 可能显示原生第三方加载项许可确认框，项目只能保留已允许记录，不能合规绕过 | 通常不显示 Windows 同款确认框，具体取决于 WPS for Linux 策略 | 通常不显示 Windows 同款确认框，具体取决于 WPS for Linux 策略 |
 | 日志 | %LOCALAPPDATA%\WPSReadAloudComate\Logs\install.log，服务日志随安装目录和进程输出管理 | /var/log/wps-read-aloud-install.log，服务日志通过 journalctl 查看 | /var/log/wps-read-aloud-install.log，服务日志通过 journalctl 查看 |
 
@@ -104,15 +104,15 @@
 
 | 目标 | 命令或操作 |
 | --- | --- |
-| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.1.17_windows.exe |
-| x64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.17_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.17_arm64.deb |
-| x64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.17_amd64.deb |
-| ARM64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.17_arm64.deb |
+| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.1.18_windows.exe |
+| x64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.18_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.18_arm64.deb |
+| x64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.18_amd64.deb |
+| ARM64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.18_arm64.deb |
 
 Windows 安装程序会检测 WPS 安装路径、版本和可执行文件位数。加载项通过本地服务工作，不注入 WPS 进程，因此同一套 Windows 本地服务可服务 32 位和 64 位 WPS。Windows 端需要修改 WPS 安装目录下的 office6/cfgs/oem.ini，安装器会请求管理员权限。
 
-Windows 版本不会写入开机自启动项，不创建常驻后台服务。安装时会把加载项文件复制到当前用户 jsaddons 下的“文档朗读助手_版本号”目录，并生成同名 .7z 离线包，写入离线 jsplugins.xml，然后在 WPS 的 oem.ini 中配置 JsApiPlugin、JSPluginsServer 和离线模式文件检查开关。安装完成后需要重启电脑，让 WPS 重新读取 OEM 配置。19860 本地服务只在点击“开始朗读”“状态检查”等功能时按需启动；停止朗读只停止当前朗读会话、播放和正在运行的语音合成子进程。卸载入口会写入开始菜单“WPS文档朗读助手”文件夹和系统“应用和功能”，卸载时清理安装文件、WPS 加载项配置、旧版自启动项、旧计划任务、注册表项和本项目写入的 OEM 指向项。
+Windows 版本采用 publish.xml 在线发布模式。安装时会写入当前用户 jsaddons 下的 publish.xml，加载项地址为 http://127.0.0.1:19860/addin/；安装器会立即启动本机朗读服务，并在当前用户 Run 自启动项中注册服务启动脚本，确保 WPS 打开时加载项地址可访问。安装完成后请彻底退出并重新打开 WPS。停止朗读只停止当前朗读会话、播放和正在运行的语音合成子进程，不关闭本机发布服务。卸载入口会写入开始菜单“WPS文档朗读助手”文件夹和系统“应用和功能”，卸载时清理安装文件、WPS 加载项配置、授权缓存、Run 自启动项、旧计划任务、开始菜单入口、注册表项和本项目写入过的 OEM 残留指向项。
 
 Windows WPS 首次信任第三方加载项时，可能显示 WPS 原生安全确认框。该弹窗由 Windows 版 WPS 客户端安全策略生成，项目不能合规地绕过或伪造关闭。安装脚本会保留已允许记录，升级安装时不主动清除授权缓存，尽量避免重复出现。
 

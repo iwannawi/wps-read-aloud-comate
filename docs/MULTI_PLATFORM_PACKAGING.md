@@ -8,11 +8,11 @@
 
 | 目标 | 安装包 | 安装路径 | 启动方式 |
 | --- | --- | --- | --- |
-| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.1.17_windows.exe | 用户选择的程序目录 | OEM + publish 离线模式注册加载项；本地服务仅功能调用时按需启动 |
-| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.17_amd64.deb | /opt/wps-read-aloud-comate | systemd |
-| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.17_arm64.deb | /opt/wps-read-aloud-comate | systemd |
-| x64 UOS V20 | cn.wps-read-aloud-comate_1.1.17_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
-| ARM64 UOS V20 | cn.wps-read-aloud-comate_1.1.17_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.1.18_windows.exe | 用户选择的程序目录 | publish.xml 注册加载项；本机服务安装后启动并随当前用户登录自启动 |
+| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.18_amd64.deb | /opt/wps-read-aloud-comate | systemd |
+| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.18_arm64.deb | /opt/wps-read-aloud-comate | systemd |
+| x64 UOS V20 | cn.wps-read-aloud-comate_1.1.18_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| ARM64 UOS V20 | cn.wps-read-aloud-comate_1.1.18_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
 
 ## 共用内容
 
@@ -26,15 +26,15 @@
 
 | 目标 | 差异点 |
 | --- | --- |
-| x86/x64 Windows 10/11 | Windows daemon、Windows Sherpa-onnx、图形安装器、OEM + publish 离线加载项注册、WinMM 播放、开始菜单和控制面板卸载入口、WPS 原生第三方加载项许可确认。 |
+| x86/x64 Windows 10/11 | Windows daemon、Windows Sherpa-onnx、图形安装器、publish.xml 加载项注册、Run 自启动、WinMM 播放、开始菜单和控制面板卸载入口、WPS 原生第三方加载项许可确认。 |
 | x64 银河麒麟 V10 及以上 | x64 Linux daemon、x64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
 | ARM64 银河麒麟 V10 及以上 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
 | x64 UOS V20 | x64 Linux daemon、x64 Linux Sherpa-onnx、UOS 应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
 | ARM64 UOS V20 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、UOS 应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
 
-Windows 加载项通过 127.0.0.1 调用独立服务，不向 WPS 进程注入 DLL。同一套 Windows 服务可服务 32 位和 64 位 WPS，安装日志仍会记录 WPS 位数。Windows 顶部选项卡使用 WPS 官方文档中的离线 jsplugin 方式：安装器复制“文档朗读助手_版本号”目录，生成同名 .7z 离线包和 jsplugins.xml，并在 WPS 的 office6/cfgs/oem.ini 中设置 JsApiPlugin、JSPluginsServer 和 disableFileCheckIntercept。.7z 包通过 Windows 10/11 自带 tar.exe 生成，发布校验会确认安装脚本包含真实离线包生成和格式检查逻辑。语音合成由 sherpa-onnx-offline-tts.exe 子进程完成，只在朗读、自检等需要合成音频时启动，停止朗读会终止当前合成和播放。Windows WPS 可能显示原生第三方加载项许可确认框，该确认框由 WPS 客户端安全策略生成，安装包只能保留已允许记录，不能合规绕过。
+Windows 加载项通过 127.0.0.1 调用独立服务，不向 WPS 进程注入 DLL。同一套 Windows 服务可服务 32 位和 64 位 WPS，安装日志仍会记录 WPS 位数。Windows 顶部选项卡使用 WPS 官方 publish.xml 模式：安装器在当前用户 jsaddons 下写入 jspluginonline 入口，地址指向 http://127.0.0.1:19860/addin/；本机服务安装后立即启动，并通过当前用户 Run 自启动项在登录后自动启动。语音合成由 sherpa-onnx-offline-tts.exe 子进程完成，只在朗读、自检等需要合成音频时启动，停止朗读会终止当前合成和播放，但不会关闭本机发布服务。Windows WPS 可能显示原生第三方加载项许可确认框，该确认框由 WPS 客户端安全策略生成，安装包只能保留已允许记录，不能合规绕过。
 
-Windows 安装包必须注册开始菜单卸载入口和当前用户“应用和功能”卸载信息。卸载时必须清理安装目录、WPS 加载项注册、授权缓存、本项目开始菜单入口、卸载注册表、旧版 Run 自启动项、旧计划任务和本项目写入的 OEM 指向项。
+Windows 安装包必须注册开始菜单卸载入口和当前用户“应用和功能”卸载信息。开始菜单入口同时写入当前用户 Programs 和公共 CommonPrograms 下的“WPS文档朗读助手”文件夹。卸载时必须清理安装目录、WPS 加载项注册、授权缓存、本项目开始菜单入口、卸载注册表、Run 自启动项、旧计划任务和本项目写入过的 OEM 残留指向项。
 
 Linux 安装包使用 systemd 管理服务，音频播放依赖当前桌面环境可用的 pw-play、paplay 或 aplay。银河麒麟包和 UOS 包的安装路径与包名不同，不能混用打包规范。
 

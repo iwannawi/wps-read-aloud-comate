@@ -60,7 +60,6 @@ type Server struct {
 	current  map[*exec.Cmd]bool
 	synthSem chan struct{}
 	httpSrv  *http.Server
-	lastUse  time.Time
 	stopOnce sync.Once
 }
 
@@ -91,7 +90,6 @@ const (
 	prefetchTextTarget           = 240
 	prefetchSentenceLimit        = 8
 	synthConcurrencyLimit        = 3
-	windowsIdleShutdown          = 30 * time.Minute
 	pauseBaseRate                = 1.2
 	standardPauseMsAtBaseRate    = 400
 	sentenceEndPauseMsAtBaseRate = 600
@@ -120,7 +118,6 @@ func main() {
 	}
 	cfg = absolutizeConfig(root, cfg)
 	server := &Server{root: root, cfg: cfg, current: make(map[*exec.Cmd]bool), synthSem: make(chan struct{}, synthConcurrencyLimit)}
-	server.lastUse = time.Now()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", server.health)
 	mux.HandleFunc("/selftest", server.selftest)
@@ -132,9 +129,8 @@ func main() {
 	mux.HandleFunc("/audio/probe", server.audioProbe)
 	mux.HandleFunc("/docs/", server.docs)
 	mux.HandleFunc("/", server.web)
-	httpSrv := &http.Server{Addr: cfg.Listen, Handler: cors(server.trackActivity(mux))}
+	httpSrv := &http.Server{Addr: cfg.Listen, Handler: cors(mux)}
 	server.httpSrv = httpSrv
-	go server.idleMonitor()
 	log.Printf("wps-tts-daemon-windows listening on http://%s", cfg.Listen)
 	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
@@ -330,31 +326,6 @@ func (s *Server) shutdown(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 		s.shutdownServer()
 	}()
-}
-
-func (s *Server) trackActivity(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.mu.Lock()
-		s.lastUse = time.Now()
-		s.mu.Unlock()
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) idleMonitor() {
-	ticker := time.NewTicker(15 * time.Second)
-	defer ticker.Stop()
-	for range ticker.C {
-		s.mu.Lock()
-		idleFor := time.Since(s.lastUse)
-		active := s.session != nil
-		s.mu.Unlock()
-		if !active && idleFor > windowsIdleShutdown {
-			log.Printf("idle timeout reached; shutting down Windows on-demand service")
-			s.shutdownServer()
-			return
-		}
-	}
 }
 
 func (s *Server) shutdownServer() {

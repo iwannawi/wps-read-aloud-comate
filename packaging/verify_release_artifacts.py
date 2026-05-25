@@ -158,18 +158,14 @@ def check_windows_package(target: dict, artifact: Path) -> None:
         version = json.loads(zf.read("app/version.json").decode("utf-8"))
         install_script = zf.read("install.ps1").decode("utf-8-sig")
         uninstall_script = zf.read("uninstall.ps1").decode("utf-8-sig")
-        if "Register-DaemonStartup" in install_script:
-            fail(f"Windows installer still contains startup registration function: {artifact.name}")
-        if "Wait-LocalServiceHealthy" in install_script:
-            fail(f"Windows installer still waits for a daemon started during install: {artifact.name}")
-        if "Set-WpsOemOfflineConfig" not in install_script or "JSPluginsServer" not in install_script:
-            fail(f"Windows installer does not configure WPS OEM offline mode: {artifact.name}")
-        if "<jsplugin name=" not in install_script or "jspluginonline name=" in install_script:
-            fail(f"Windows installer is not using publish offline jsplugin mode: {artifact.name}")
-        if "New-OfflineAddinPackage" not in install_script or "tar.exe" not in install_script:
-            fail(f"Windows installer does not create a real offline 7z add-in package: {artifact.name}")
-        if "disableFileCheckIntercept" not in install_script:
-            fail(f"Windows installer misses the offline mode file-check OEM switch: {artifact.name}")
+        if "Register-DaemonStartup" not in install_script:
+            fail(f"Windows installer does not register daemon startup: {artifact.name}")
+        if "Wait-LocalServiceHealthy" not in install_script:
+            fail(f"Windows installer does not verify the daemon started during install: {artifact.name}")
+        if "jspluginonline name=" not in install_script or "http://127.0.0.1:19860/addin/" not in install_script:
+            fail(f"Windows installer is not using publish online mode: {artifact.name}")
+        if "New-OfflineAddinPackage" in install_script or "Set-WpsOemOfflineConfig" in install_script:
+            fail(f"Windows installer still contains offline OEM package registration: {artifact.name}")
         if "WPSReadAloudComate" not in uninstall_script or "Uninstall" not in install_script:
             fail(f"Windows uninstall integration is incomplete: {artifact.name}")
         if "WPS文档朗读助手" not in install_script or "卸载 WPS文档朗读助手.lnk" not in install_script:

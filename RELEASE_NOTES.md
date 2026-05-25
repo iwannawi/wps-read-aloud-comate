@@ -2,7 +2,7 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-版本：1.1.17
+版本：1.1.18
 发布时间：20260525
 开发者：Zhang Jingyao
 
@@ -18,22 +18,25 @@
 
 ## 变更
 
-- Windows 离线加载项注册补齐真实 7z 包生成流程。安装器会在写入本地“文档朗读助手_版本号”目录后，使用 Windows 10/11 自带 tar.exe 生成同名 .7z 离线包，满足 WPS 离线 jsplugin 对压缩包地址的校验要求。
-- Windows 安装校验增加离线包格式检查，确保生成文件为真实 7z 格式。
+- Windows 端恢复为已验证可显示选项卡的 publish 模式：写入 publish.xml 的 jspluginonline 入口，地址为 http://127.0.0.1:19860/addin/。
+- Windows 安装后立即启动本机朗读服务，并写入当前用户 Run 自启动项，确保 WPS 启动时加载项发布地址可访问。
+- Windows 本机朗读服务取消空闲自动退出，保持常驻，直到用户卸载、系统退出或进程被手动结束。
+- Windows 开始菜单卸载入口同时写入当前用户 Programs 和公共 CommonPrograms 下的“WPS文档朗读助手”文件夹。
 
 ## 修复
 
-- 修复 Windows 端仅预置本地加载项目录、未生成真实离线包，导致部分 WPS 版本启动后看不到“文档朗读”选项卡的问题。
+- 修复 Windows 端 OEM 离线模式下部分 WPS 版本仍看不到“文档朗读”选项卡的问题。
+- 修复 Windows 11 开始菜单中“WPS文档朗读助手”文件夹可能未显示的问题。
 
 ## 交付文件
 
 | 目标 | 文件 |
 | --- | --- |
-| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.17_windows.exe |
-| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.17_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.17_arm64.deb |
-| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.17_amd64.deb |
-| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.17_arm64.deb |
+| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.18_windows.exe |
+| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.18_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.18_arm64.deb |
+| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.18_amd64.deb |
+| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.18_arm64.deb |
 
 ## 已知限制
 

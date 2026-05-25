@@ -474,115 +474,22 @@ function ConvertTo-FileUri {
   return ([System.Uri]([System.IO.Path]::GetFullPath($Path))).AbsoluteUri
 }
 
-function New-OfflineAddinPackage {
-  param(
-    [string]$JsDir,
-    [string]$FolderName,
-    [string]$OutputPath
-  )
-
-  $SourceDir = Join-Path $JsDir $FolderName
-  if (!(Test-Path $SourceDir -PathType Container)) {
-    throw "安装包不完整：未找到离线加载项目录 $SourceDir。"
-  }
-  $Tar = Get-Command "tar.exe" -ErrorAction SilentlyContinue
-  if (!$Tar) {
-    throw "系统缺少 tar.exe，无法生成 WPS 离线加载项包。请确认系统为 Windows 10/11。"
-  }
-  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-  $OutputDir = Split-Path -Parent $OutputPath
-  if ($OutputDir) {
-    New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
-  }
-  & $Tar.Source -a -cf $OutputPath -C $JsDir $FolderName
-  if ($LASTEXITCODE -ne 0 -or !(Test-Path $OutputPath -PathType Leaf)) {
-    throw "生成 WPS 离线加载项包失败。"
-  }
-  $Stream = [System.IO.File]::OpenRead($OutputPath)
-  try {
-    $Header = New-Object byte[] 6
-    $Read = $Stream.Read($Header, 0, $Header.Length)
-    $Expected = [byte[]](0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c)
-    if ($Read -ne 6) {
-      throw "生成的离线加载项包为空。"
-    }
-    for ($i = 0; $i -lt 6; $i += 1) {
-      if ($Header[$i] -ne $Expected[$i]) {
-        throw "生成的离线加载项包不是有效的 7z 格式。"
-      }
-    }
-  }
-  finally {
-    $Stream.Close()
-  }
-}
-
-function Set-IniSectionValue {
-  param(
-    [string]$Content,
-    [string]$Section,
-    [string]$Key,
-    [string]$Value
-  )
-  $Lines = New-Object System.Collections.Generic.List[string]
-  if (![string]::IsNullOrEmpty($Content)) {
-    foreach ($Line in ($Content -split "`r?`n")) {
-      $Lines.Add($Line)
-    }
-  }
-  $SectionHeader = "[$Section]"
-  $SectionIndex = -1
-  for ($i = 0; $i -lt $Lines.Count; $i += 1) {
-    if ($Lines[$i].Trim().Equals($SectionHeader, [System.StringComparison]::OrdinalIgnoreCase)) {
-      $SectionIndex = $i
-      break
-    }
-  }
-  if ($SectionIndex -lt 0) {
-    if ($Lines.Count -gt 0 -and ![string]::IsNullOrWhiteSpace($Lines[$Lines.Count - 1])) {
-      $Lines.Add("")
-    }
-    $Lines.Add($SectionHeader)
-    $Lines.Add("$Key=$Value")
-    return ($Lines -join "`r`n")
-  }
-  $InsertAt = $Lines.Count
-  for ($i = $SectionIndex + 1; $i -lt $Lines.Count; $i += 1) {
-    if ($Lines[$i].Trim() -match '^\[[^\]]+\]$') {
-      $InsertAt = $i
-      break
-    }
-    if ($Lines[$i] -match "^\s*$([regex]::Escape($Key))\s*=") {
-      $Lines[$i] = "$Key=$Value"
-      return ($Lines -join "`r`n")
-    }
-  }
-  $Lines.Insert($InsertAt, "$Key=$Value")
-  return ($Lines -join "`r`n")
-}
-
-function Set-WpsOemOfflineConfig {
-  param(
-    [object]$WpsInfo,
-    [string]$PluginsXml
-  )
+function Remove-WpsOemProjectConfig {
+  param([object]$WpsInfo)
   $OemPath = Join-Path $WpsInfo.Directory "cfgs\oem.ini"
-  $OemDir = Split-Path -Parent $OemPath
-  if (!(Test-Path $OemDir)) {
-    New-Item -ItemType Directory -Force -Path $OemDir | Out-Null
-  }
   if (!(Test-Path $OemPath)) {
-    New-Item -ItemType File -Force -Path $OemPath | Out-Null
+    return
   }
   Backup-ConfigFile -Path $OemPath
-  $Content = Get-Content -Raw -Path $OemPath -Encoding UTF8
-  $ServerUri = ConvertTo-FileUri -Path $PluginsXml
-  $Content = Set-IniSectionValue -Content $Content -Section "Support" -Key "JsApiPlugin" -Value "true"
-  $Content = Set-IniSectionValue -Content $Content -Section "Support" -Key "disableFileCheckIntercept" -Value "true"
-  $Content = Set-IniSectionValue -Content $Content -Section "Server" -Key "JSPluginsServer" -Value $ServerUri
-  Set-Content -Path $OemPath -Value $Content -Encoding UTF8
-  Write-Host "已更新 WPS OEM 配置：$OemPath"
-  Write-Host "JSPluginsServer：$ServerUri"
+  $Lines = New-Object System.Collections.Generic.List[string]
+  foreach ($Line in (Get-Content -Path $OemPath -Encoding UTF8)) {
+    if ($Line -match '^\s*JSPluginsServer\s*=' -and ($Line -match 'Kingsoft[\\/]+wps[\\/]+jsaddons[\\/]+jsplugins\.xml' -or $Line -match '127\.0\.0\.1:19860')) {
+      continue
+    }
+    $Lines.Add($Line)
+  }
+  Set-Content -Path $OemPath -Value ($Lines -join "`r`n") -Encoding UTF8
+  Write-Host "已清理本项目旧版 WPS OEM 指向项：$OemPath"
 }
 
 function Write-WindowsRuntimeConfig {
@@ -607,7 +514,7 @@ function Write-WindowsRuntimeConfig {
   Set-Content -Path $Path -Value $Content -Encoding UTF8
 }
 
-function Remove-OldStartupEntries {
+function Remove-ProjectStartupEntries {
   Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WPSReadAloudComate" -ErrorAction SilentlyContinue
   try {
     Stop-ScheduledTask -TaskName "WPSReadAloudComate" -ErrorAction SilentlyContinue
@@ -618,25 +525,93 @@ function Remove-OldStartupEntries {
   }
 }
 
+function Register-DaemonStartup {
+  param([string]$Launcher)
+  $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+  if (!(Test-Path $PowerShell)) {
+    $PowerShell = "powershell.exe"
+  }
+  $Command = "`"$PowerShell`" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`""
+  New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Force | Out-Null
+  Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "WPSReadAloudComate" -Value $Command
+  Write-Host "已写入当前用户开机自启动项：WPSReadAloudComate"
+}
+
+function Start-DaemonNow {
+  param([string]$Launcher)
+  $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+  if (!(Test-Path $PowerShell)) {
+    $PowerShell = "powershell.exe"
+  }
+  Start-Process -FilePath $PowerShell -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", $Launcher) -WindowStyle Hidden | Out-Null
+}
+
+function Wait-LocalServiceHealthy {
+  param([int]$TimeoutSeconds = 20)
+  $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $Deadline) {
+    try {
+      $Response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:19860/health" -TimeoutSec 2
+      if ($Response.StatusCode -ge 200 -and $Response.StatusCode -lt 500) {
+        return $true
+      }
+    }
+    catch {
+    }
+    Start-Sleep -Milliseconds 500
+  }
+  return $false
+}
+
+function New-Shortcut {
+  param(
+    [object]$Shell,
+    [string]$Path,
+    [string]$TargetPath,
+    [string]$Arguments,
+    [string]$WorkingDirectory,
+    [string]$IconPath
+  )
+  $ShortcutDir = Split-Path -Parent $Path
+  New-Item -ItemType Directory -Force -Path $ShortcutDir | Out-Null
+  $Shortcut = $Shell.CreateShortcut($Path)
+  $Shortcut.TargetPath = $TargetPath
+  $Shortcut.Arguments = $Arguments
+  $Shortcut.WorkingDirectory = $WorkingDirectory
+  if (Test-Path $IconPath) {
+    $Shortcut.IconLocation = $IconPath
+  }
+  $Shortcut.Save()
+}
+
 function New-UninstallShortcut {
   param([string]$Root)
-  $ShortcutDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\WPS文档朗读助手"
-  New-Item -ItemType Directory -Force -Path $ShortcutDir | Out-Null
-  $ShortcutPath = Join-Path $ShortcutDir "卸载 WPS文档朗读助手.lnk"
   $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
   if (!(Test-Path $PowerShell)) {
     $PowerShell = "powershell.exe"
   }
   $Shell = New-Object -ComObject WScript.Shell
-  $Shortcut = $Shell.CreateShortcut($ShortcutPath)
-  $Shortcut.TargetPath = $PowerShell
-  $Shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Root\uninstall.ps1`""
-  $Shortcut.WorkingDirectory = $Root
   $IconPath = Join-Path $Root "installer-assets\app.ico"
-  if (Test-Path $IconPath) {
-    $Shortcut.IconLocation = $IconPath
+  $Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Root\uninstall.ps1`""
+  $Folders = @()
+  $UserPrograms = [Environment]::GetFolderPath("Programs")
+  if (![string]::IsNullOrWhiteSpace($UserPrograms)) {
+    $Folders += (Join-Path $UserPrograms "WPS文档朗读助手")
   }
-  $Shortcut.Save()
+  $CommonPrograms = [Environment]::GetFolderPath("CommonPrograms")
+  if (![string]::IsNullOrWhiteSpace($CommonPrograms)) {
+    $Folders += (Join-Path $CommonPrograms "WPS文档朗读助手")
+  }
+  foreach ($Folder in ($Folders | Sort-Object -Unique)) {
+    try {
+      $ShortcutPath = Join-Path $Folder "卸载 WPS文档朗读助手.lnk"
+      New-Shortcut -Shell $Shell -Path $ShortcutPath -TargetPath $PowerShell -Arguments $Arguments -WorkingDirectory $Root -IconPath $IconPath
+      Write-Host "已创建开始菜单卸载入口：$ShortcutPath"
+    }
+    catch {
+      Write-Host "开始菜单入口创建失败，已跳过：$($_.Exception.Message)"
+    }
+  }
 }
 
 function Register-UninstallEntry {
@@ -705,7 +680,7 @@ try {
   Write-Host "本安装包使用独立本地朗读服务，不注入 WPS 进程，可同时支持 32 位和 64 位 WPS。"
 
   Write-InstallProgress -Percent 20 -Action "清理旧版本" -Detail "正在停止旧版朗读服务"
-  Remove-OldStartupEntries
+  Remove-ProjectStartupEntries
   Stop-InstalledDaemonProcess -Root $InstallDir
   Write-InstallProgress -Percent 35 -Action "复制程序文件" -Detail "安装路径：$InstallDir"
   New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
@@ -723,47 +698,41 @@ try {
   }
 
   $Launcher = New-DaemonLauncher -Root $InstallDir -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
-  Write-InstallProgress -Percent 55 -Action "配置本机服务" -Detail "朗读服务不写入开机自启动项"
-  Write-Host "已清理旧版自启动项。新版 Windows 包不会开机自启动朗读服务。"
+  Write-InstallProgress -Percent 55 -Action "配置本机服务" -Detail "正在注册并启动本机朗读服务"
+  Register-DaemonStartup -Launcher $Launcher
+  Start-DaemonNow -Launcher $Launcher
+  if (!(Wait-LocalServiceHealthy -TimeoutSeconds 25)) {
+    throw "本机朗读服务启动失败。请确认 127.0.0.1:19860 未被其他程序占用，并查看安装日志。"
+  }
+  Write-Host "本机朗读服务已启动，并会随当前用户登录自动启动。"
 
-  Write-InstallProgress -Percent 70 -Action "注册 WPS 加载项" -Detail "正在写入 WPS 离线加载项配置"
+  Write-InstallProgress -Percent 70 -Action "注册 WPS 加载项" -Detail "正在写入 WPS publish 加载项配置"
   $JsDir = Join-Path $env:APPDATA "Kingsoft\wps\jsaddons"
   New-Item -ItemType Directory -Force -Path $JsDir | Out-Null
   $AddinVersion = $VersionInfo.version
   Get-ChildItem -Path $JsDir -Directory -Filter "wps-read-aloud_*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
   Get-ChildItem -Path $JsDir -Directory -Filter "$AddinDisplayName`_*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-  $OfflineFolderName = $AddinDisplayName + "_" + $AddinVersion
-  $Target = Join-Path $JsDir $OfflineFolderName
-  New-Item -ItemType Directory -Force -Path $Target | Out-Null
-  Copy-Item -Path (Join-Path $InstallDir "addin\*") -Destination $Target -Recurse -Force
-  Write-WindowsRuntimeConfig -Path (Join-Path $Target "assets\runtime-config.js") -Root $InstallDir -Launcher $Launcher -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
   Write-WindowsRuntimeConfig -Path (Join-Path $InstallDir "addin\assets\runtime-config.js") -Root $InstallDir -Launcher $Launcher -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
-  $OfflinePackagePath = Join-Path $InstallDir ($OfflineFolderName + ".7z")
-  New-OfflineAddinPackage -JsDir $JsDir -FolderName $OfflineFolderName -OutputPath $OfflinePackagePath
 
   $PublishXml = Join-Path $JsDir "publish.xml"
   $PluginsXml = Join-Path $JsDir "jsplugins.xml"
   $KnownNames = @($AddinInternalName, $AddinDisplayName, "WPS 文档朗读助手", "wps-read-aloud-comate", "wps-read-aloud-xc", "wps-read-aloud-zhangjingyao")
-  Remove-WpsPluginEntry -Path $PublishXml -Names $KnownNames
-  $OfflinePackageUrl = (ConvertTo-FileUri -Path $OfflinePackagePath)
-  $OfflineEntry = '<jsplugin name="' + (Escape-XmlAttribute $AddinDisplayName) + '" type="wps" version="' + (Escape-XmlAttribute $AddinVersion) + '" url="' + (Escape-XmlAttribute $OfflinePackageUrl) + '" desc="' + (Escape-XmlAttribute $AddinDescription) + '"/>'
-  Set-WpsPluginEntry -Path $PluginsXml -Entry $OfflineEntry -Names $KnownNames
-  try {
-    Set-WpsOemOfflineConfig -WpsInfo $WpsInfo -PluginsXml $PluginsXml
-  }
-  catch {
-    throw "写入 WPS OEM 配置失败。publish 离线模式需要修改 WPS 安装目录下的 office6\cfgs\oem.ini；请关闭 WPS 后右键以管理员身份运行安装程序。详细原因：$($_.Exception.Message)"
-  }
-  Set-WpsAuthAddinEntryAllowed -Path (Join-Path $JsDir "authaddin.json") -Names $KnownNames -AddinName $AddinDisplayName -AddinPath (ConvertTo-FileUri -Path $Target)
+  $LocalUrl = "http://127.0.0.1:19860/addin/"
+  $PublishEntry = '<jspluginonline name="' + (Escape-XmlAttribute $AddinDisplayName) + '" type="wps" enable="enable_dev" install="' + (Escape-XmlAttribute $LocalUrl) + '" url="' + (Escape-XmlAttribute $LocalUrl) + '" desc="' + (Escape-XmlAttribute $AddinDescription) + '"/>'
+  $OnlineEntry = '<jsplugin name="' + (Escape-XmlAttribute $AddinDisplayName) + '" type="wps" enable="enable_dev" url="' + (Escape-XmlAttribute $LocalUrl) + '" version="' + (Escape-XmlAttribute $AddinVersion) + '" desc="' + (Escape-XmlAttribute $AddinDescription) + '"><ribbon file="' + (Escape-XmlAttribute ($LocalUrl + "ribbon.xml")) + '"/></jsplugin>'
+  Set-WpsPluginEntry -Path $PublishXml -Entry $PublishEntry -Names $KnownNames
+  Set-WpsPluginEntry -Path $PluginsXml -Entry $OnlineEntry -Names $KnownNames
+  Remove-WpsOemProjectConfig -WpsInfo $WpsInfo
+  Set-WpsAuthAddinEntryAllowed -Path (Join-Path $JsDir "authaddin.json") -Names $KnownNames -AddinName $AddinDisplayName -AddinPath $LocalUrl
   Clear-WpsJsAddinBlockHost -JsDir $JsDir
   Write-InstallState -Root $InstallDir -WpsInfo $WpsInfo -PluginsXml $PluginsXml
-  Write-Host "已安装 publish 离线模式加载项目录：$Target"
+  Write-Host "已写入 WPS publish 加载项地址：$LocalUrl"
   Write-InstallProgress -Percent 86 -Action "注册卸载入口" -Detail "正在写入开始菜单和控制面板卸载信息"
   New-UninstallShortcut -Root $InstallDir
   Register-UninstallEntry -Root $InstallDir -VersionInfo $VersionInfo
 
-  Write-InstallProgress -Percent 100 -Action "安装完成" -Detail "请重启电脑后打开 WPS"
-  Write-Host "WPS 文档朗读助手安装完成。请重启电脑后打开 WPS，在顶部查看“文档朗读”选项卡。"
+  Write-InstallProgress -Percent 100 -Action "安装完成" -Detail "请彻底退出并重新打开 WPS"
+  Write-Host "WPS 文档朗读助手安装完成。请彻底退出并重新打开 WPS，在顶部查看“文档朗读”选项卡。"
   Write-Host "安装日志：$LogFile"
 }
 catch {

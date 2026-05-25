@@ -24,11 +24,11 @@
 ## Windows 安装
 
 - 默认安装目录使用 %LOCALAPPDATA%\Programs\WPS Read Aloud Comate，不写入 C:\Program Files。
-- Windows 版本不写入 HKCU\Software\Microsoft\Windows\CurrentVersion\Run，不创建计划任务，不在安装后启动 daemon。选项卡加载依赖 OEM + publish 离线目录，不依赖 daemon 常驻。
+- 当前 Windows 版本使用 publish.xml online 入口，加载项显示依赖本机服务可访问。安装后必须启动 daemon，并写入 HKCU\Software\Microsoft\Windows\CurrentVersion\Run，让服务随当前用户登录自动启动。
 - 旧版计划任务只做清理兼容。RunLevel 只允许 Limited 或 Highest，不使用 LeastPrivilege。
-- 安装阶段只生成 start-daemon.ps1，供 WPS 加载项按需启动服务。
+- 安装阶段生成 start-daemon.ps1，安装器立即调用它启动服务，并把它写入 Run 自启动项。
 - 安装前必须停止当前安装目录下正在运行的旧版 wps-tts-daemon.exe。
-- 安装期不做本地服务健康检查，避免为了检查而启动后台进程。
+- 安装期需要做本地服务健康检查；如果 127.0.0.1:19860 无法启动，应阻断安装并给出明确错误。
 - Windows 安装包必须写入开始菜单卸载入口和当前用户“应用和功能”卸载注册表。
 - Windows 卸载脚本必须停止本项目 daemon，清理旧版 Run 自启动项、旧计划任务、WPS 加载项注册、授权缓存、开始菜单入口、卸载注册表和安装目录。
 - 安装器应构建为 Windows GUI 子系统程序，正常安装不弹命令行窗口。
@@ -39,13 +39,12 @@
 - 安装脚本不得覆盖整个 WPS 加载项配置文件，只增删本项目条目。
 - 注册名称使用中文“文档朗读助手”。
 - 授权描述使用“WPS文档朗读助手加载项申请访问本机语音合成服务”。
-- Windows WPS 端使用 OEM + publish 离线模式：复制“文档朗读助手_版本号”目录，生成 jsplugins.xml，并将 oem.ini 的 JSPluginsServer 指向本地 jsplugins.xml。
-- Windows WPS 2019 离线模式需要 oem.ini 中的 disableFileCheckIntercept=true，否则可能无法完整生成或加载离线加载项。
-- 离线 jsplugin 的 url 必须指向可访问的 .7z 压缩包。只预置 name_version 目录但不生成真实 .7z 时，部分 Windows WPS 版本会看不到选项卡。Windows 10/11 可用系统自带 tar.exe 生成 7z 包，安装脚本必须校验 7z 文件头。
+- Windows WPS 端恢复使用 publish.xml online 模式：写入 jspluginonline，地址为 http://127.0.0.1:19860/addin/。
+- OEM + 离线 jsplugin 模式在部分 Windows WPS 版本上仍可能不显示选项卡，当前版本不再作为 Windows 默认方案。
 - Windows 端停止朗读不能调用 /shutdown。停止朗读只调用 /read/stop，终止当前会话、播放和 sherpa-onnx 子进程。
 - 本机 Windows 环境中 python 命令可能被 Microsoft Store 应用执行别名接管，py 命令也可能不可用。构建和同步脚本优先使用 Codex 运行时 Python：C:\Users\zhangjingyao\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe。
 - Windows HTTP 根地址模式已废弃。它要求 WPS 打开时本地服务仍在运行，容易导致安装后稍晚打开 WPS 看不到选项卡。
-- 不再写 publish.xml online 入口；旧 publish.xml 内本项目条目只清理，不新增。
+- 必须写 publish.xml online 入口；旧 publish/jsplugins 内本项目条目先清理再写入，避免重复。
 - Windows WPS 对 127.0.0.1 online 入口可能生成一次原生安全确认，项目侧只能避免重复注册，不能伪造或关闭 WPS 安全确认。
 - 升级时不要清理已允许的 authaddin.json 授权缓存；应保留并刷新本项目条目，避免每次升级后重复弹出许可确认。
 - 只清理本项目相关的阻止缓存和重复 publish/jsplugins 条目；不处理其他加载项的授权信息。
