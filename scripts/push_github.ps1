@@ -12,7 +12,9 @@ if (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyCo
 }
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
-$Log = Join-Path $Root "dist\github-push.log"
+$LogDir = Join-Path $Root "build\logs"
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$Log = Join-Path $LogDir "github-push.log"
 
 function Write-Log($Text) {
   $Text | Tee-Object -FilePath $Log -Append
