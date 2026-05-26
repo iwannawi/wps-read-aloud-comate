@@ -174,6 +174,10 @@ $PythonCandidates = @()
 if (![string]::IsNullOrWhiteSpace($env:PYTHON)) {
   $PythonCandidates += $env:PYTHON
 }
+$BundledPython = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+if (Test-Path $BundledPython) {
+  $PythonCandidates += $BundledPython
+}
 $PythonCandidates += @("py", "python", "python3")
 $Python = ""
 foreach ($Candidate in $PythonCandidates) {
