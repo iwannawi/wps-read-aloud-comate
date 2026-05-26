@@ -42,7 +42,7 @@
 - Windows WPS 端恢复使用 publish.xml online 模式：写入 jspluginonline，地址为 http://127.0.0.1:19860/addin/。
 - OEM + 离线 jsplugin 模式在部分 Windows WPS 版本上仍可能不显示选项卡，当前版本不再作为 Windows 默认方案。
 - Windows 端停止朗读不能调用 /shutdown。停止朗读只调用 /read/stop，终止当前会话、播放和 sherpa-onnx 子进程。
-- 本机 Windows 环境中 python 命令可能被 Microsoft Store 应用执行别名接管，py 命令也可能不可用。构建和同步脚本优先使用 Codex 运行时 Python：C:\Users\zhangjingyao\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe。
+- Windows 环境中 python 命令可能被 Microsoft Store 应用执行别名接管，py 命令也可能不可用。构建和同步脚本应优先读取 PYTHON 环境变量，其次查找 py、python 或 python3，避免写死本机路径。
 - Windows HTTP 根地址模式已废弃。它要求 WPS 打开时本地服务仍在运行，容易导致安装后稍晚打开 WPS 看不到选项卡。
 - 必须写 publish.xml online 入口；旧 publish/jsplugins 内本项目条目先清理再写入，避免重复。
 - Windows WPS 对 127.0.0.1 online 入口可能生成一次原生安全确认，项目侧只能避免重复注册，不能伪造或关闭 WPS 安全确认。
@@ -52,7 +52,7 @@
 
 ## Linux 安装
 
-- x64 银河麒麟 V10 及以上、ARM64 银河麒麟 V10 及以上、x64 UOS V20、ARM64 UOS V20 使用 systemd。
+- x64 银河麒麟系统、ARM64 银河麒麟系统、x64 UOS系统、ARM64 UOS系统 使用 systemd。
 - 新版本使用 wps-read-aloud-comate.service，避免与旧版 wps-tts.service 发生文件归属冲突。
 - 不要再通过 Conflicts/Replaces 强制移除旧包名；旧包维护脚本损坏时，dpkg 会先执行旧脚本并导致新包无法接管。
 - 安装时应停用旧版 wps-tts.service，再启用 wps-read-aloud-comate.service。

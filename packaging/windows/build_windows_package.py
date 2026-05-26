@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = os.environ.get("VERSION", "1.1.20")
-RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260526")
+VERSION = os.environ.get("VERSION", "1.2.0")
+RELEASE_DATE = os.environ.get("RELEASE_DATE", "2026/05/26")
 WINDOWS_ARCH = os.environ.get("WINDOWS_ARCH", "386")
 ARCH_LABEL = "x86" if WINDOWS_ARCH in {"386", "x86"} else WINDOWS_ARCH
 PKG_NAME = "wps-read-aloud-comate"
@@ -140,7 +140,7 @@ def main() -> None:
     copytree(RUNTIME / "sherpa-onnx", app / "engines" / "sherpa-onnx")
     copytree(VOICE, app / "voices" / "sherpa")
     copytree(ROOT / "third_party_licenses", app / "third_party_licenses")
-    for doc in ["RELEASE_NOTES.md", "ACCEPTANCE_TEST.md", "SOURCE_OFFER.md"]:
+    for doc in ["RELEASE_NOTES.md", "SOURCE_OFFER.md"]:
         shutil.copy2(ROOT / doc, app / doc)
     (app / "daemon").mkdir(parents=True, exist_ok=True)
     shutil.copy2(OUT / f"wps-tts-daemon-windows-{ARCH_LABEL}.exe", app / "daemon" / "wps-tts-daemon.exe")

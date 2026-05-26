@@ -19,6 +19,7 @@ FORBIDDEN_RESOURCE_TOKENS = (
 )
 
 FORBIDDEN_PACKAGE_FILENAMES = (
+    "ACCEPTANCE_TEST.md",
     "BUILD_RELEASE_LESSONS.md",
     "CODEX_AUTOMATION.md",
 )
@@ -92,10 +93,10 @@ def check_linux_package(target: dict, artifact: Path) -> None:
     control = control_tar.extractfile("control").read().decode("utf-8")
     if f"Architecture: {target['arch']}" not in control:
         fail(f"wrong deb architecture in control: {artifact.name}")
-    if target["distro"] == "kylin" and "银河麒麟" not in control:
+    if target["distro"] == "kylin" and "银河麒麟系统" not in control:
         fail(f"missing Kylin description in control: {artifact.name}")
-    if target["distro"] == "uos" and "UOS" not in control:
-        fail(f"missing UOS description in control: {artifact.name}")
+    if target["distro"] == "uos" and "UOS系统" not in control:
+        fail(f"missing UOS系统 description in control: {artifact.name}")
 
     app_root = "opt/wps-read-aloud-comate"
     config_path = "etc/wps-read-aloud-comate/config.yaml"
@@ -105,7 +106,7 @@ def check_linux_package(target: dict, artifact: Path) -> None:
         config_path = f"{app_root}/config.yaml"
         package_name = "cn.wps-read-aloud-comate"
         if not artifact.name.startswith("cn."):
-            fail(f"UOS package name must start with cn.: {artifact.name}")
+            fail(f"UOS系统 package name must start with cn.: {artifact.name}")
     elif artifact.name.startswith("cn."):
         fail(f"Kylin package name must not use cn. prefix: {artifact.name}")
     required = {

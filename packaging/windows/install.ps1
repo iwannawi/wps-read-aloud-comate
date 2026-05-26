@@ -209,7 +209,6 @@ function Clear-InstalledPayload {
     "installer-assets",
     "third_party_licenses",
     "voices",
-    "ACCEPTANCE_TEST.md",
     "RELEASE_NOTES.md",
     "SOURCE_OFFER.md",
     "config.yaml",
@@ -620,7 +619,7 @@ function New-Shortcut {
   $Shortcut.TargetPath = $TargetPath
   $Shortcut.Arguments = $Arguments
   $Shortcut.WorkingDirectory = $WorkingDirectory
-  if (Test-Path $IconPath) {
+  if (![string]::IsNullOrWhiteSpace($IconPath)) {
     $Shortcut.IconLocation = $IconPath
   }
   $Shortcut.Save()
@@ -663,6 +662,7 @@ function New-StartMenuShortcuts {
   $Explorer = Join-Path $env:WINDIR "explorer.exe"
   $Shell = New-Object -ComObject WScript.Shell
   $IconPath = Join-Path $Root "installer-assets\app.ico"
+  $UninstallIconPath = (Join-Path $env:WINDIR "System32\shell32.dll") + ",31"
   $UninstallArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Root\uninstall.ps1`""
   $Folders = @()
   $UserPrograms = [Environment]::GetFolderPath("Programs")
@@ -679,7 +679,7 @@ function New-StartMenuShortcuts {
       $OpenPath = Join-Path $Folder "打开安装目录.lnk"
       $UninstallPath = Join-Path $Folder "卸载 WPS文档朗读助手.lnk"
       New-Shortcut -Shell $Shell -Path $OpenPath -TargetPath $Explorer -Arguments "`"$Root`"" -WorkingDirectory $Root -IconPath $IconPath
-      New-Shortcut -Shell $Shell -Path $UninstallPath -TargetPath $PowerShell -Arguments $UninstallArguments -WorkingDirectory $Root -IconPath $IconPath
+      New-Shortcut -Shell $Shell -Path $UninstallPath -TargetPath $PowerShell -Arguments $UninstallArguments -WorkingDirectory $Root -IconPath $UninstallIconPath
       Write-Host "已创建开始菜单文件夹：$Folder"
     }
     catch {
@@ -706,7 +706,7 @@ function Register-UninstallEntry {
   }
   Set-ItemProperty -Path $Key -Name "DisplayName" -Value "WPS 文档朗读助手"
   Set-ItemProperty -Path $Key -Name "DisplayVersion" -Value ([string]$VersionInfo.version)
-  Set-ItemProperty -Path $Key -Name "Publisher" -Value "Zhang Jingyao"
+  Set-ItemProperty -Path $Key -Name "Publisher" -Value "ZHANG JING YAO"
   Set-ItemProperty -Path $Key -Name "InstallLocation" -Value $Root
   Set-ItemProperty -Path $Key -Name "DisplayIcon" -Value $DisplayIcon
   Set-ItemProperty -Path $Key -Name "UninstallString" -Value "`"$PowerShell`" -NoProfile -ExecutionPolicy Bypass -File `"$UninstallScript`""

@@ -32,12 +32,7 @@ function ConvertFrom-SecureStringPlain($SecureString) {
 function Get-GitHubTokenFromGcm {
   $Gcm = Get-Command git-credential-manager.exe -ErrorAction SilentlyContinue
   if (!$Gcm) {
-    $KnownGcm = "C:\Users\zhangjingyao\scoop\apps\git\2.53.0.2\mingw64\bin\git-credential-manager.exe"
-    if (Test-Path $KnownGcm) {
-      $GcmPath = $KnownGcm
-    } else {
-      return ""
-    }
+    return ""
   } else {
     $GcmPath = $Gcm.Source
   }
@@ -60,12 +55,7 @@ function Save-GitHubTokenToGcm($Token) {
   }
   $Gcm = Get-Command git-credential-manager.exe -ErrorAction SilentlyContinue
   if (!$Gcm) {
-    $KnownGcm = "C:\Users\zhangjingyao\scoop\apps\git\2.53.0.2\mingw64\bin\git-credential-manager.exe"
-    if (Test-Path $KnownGcm) {
-      $GcmPath = $KnownGcm
-    } else {
-      return
-    }
+    return
   } else {
     $GcmPath = $Gcm.Source
   }

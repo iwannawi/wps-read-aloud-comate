@@ -36,15 +36,54 @@ function Get-FreeTcpPort {
   }
 }
 
+function Expand-PayloadFromInstaller([string]$InstallerPath, [string]$Version) {
+  if (!(Test-Path -LiteralPath $InstallerPath)) {
+    throw "Windows installer does not exist: $InstallerPath"
+  }
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $marker = [System.Text.Encoding]::ASCII.GetBytes("WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1`n")
+  $bytes = [System.IO.File]::ReadAllBytes($InstallerPath)
+  $offset = -1
+  for ($i = $bytes.Length - $marker.Length; $i -ge 0; $i -= 1) {
+    $matched = $true
+    for ($j = 0; $j -lt $marker.Length; $j += 1) {
+      if ($bytes[$i + $j] -ne $marker[$j]) {
+        $matched = $false
+        break
+      }
+    }
+    if ($matched) {
+      $offset = $i + $marker.Length
+      break
+    }
+  }
+  if ($offset -lt 0) {
+    throw "Installer payload marker was not found: $InstallerPath"
+  }
+  $tempRoot = Join-Path $env:TEMP ("wps-read-aloud-comate-test-" + $Version + "-" + [guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+  $zipPath = Join-Path $tempRoot "payload.zip"
+  [System.IO.File]::WriteAllBytes($zipPath, $bytes[$offset..($bytes.Length - 1)])
+  [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tempRoot)
+  return $tempRoot
+}
+
 if ([string]::IsNullOrWhiteSpace($Version)) {
   $platforms = Get-Content -Raw -Encoding UTF8 -LiteralPath "packaging\platforms.json" | ConvertFrom-Json
   $Version = [string]$platforms.version
 }
 
 $app = Join-Path (Get-Location) ("build\windows\wps-read-aloud-comate_{0}_windows_x86\app" -f $Version)
+$extractedRoot = $null
 $exe = Join-Path $app "daemon\wps-tts-daemon.exe"
 if (!(Test-Path -LiteralPath $exe)) {
-  throw "Windows packaged daemon does not exist: $exe"
+  $installer = Join-Path (Get-Location) ("dist\wps-read-aloud-comate_{0}_windows.exe" -f $Version)
+  $extractedRoot = Expand-PayloadFromInstaller -InstallerPath $installer -Version $Version
+  $app = Join-Path $extractedRoot "app"
+  $exe = Join-Path $app "daemon\wps-tts-daemon.exe"
+  if (!(Test-Path -LiteralPath $exe)) {
+    throw "Windows packaged daemon does not exist in build directory or installer payload: $exe"
+  }
 }
 
 $port = Get-FreeTcpPort
@@ -131,4 +170,7 @@ try {
     Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
   }
   Remove-Item -LiteralPath $cfg -ErrorAction SilentlyContinue
+  if ($extractedRoot -and (Test-Path -LiteralPath $extractedRoot)) {
+    Remove-Item -LiteralPath $extractedRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }

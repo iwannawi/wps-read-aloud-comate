@@ -42,10 +42,10 @@
 | CPU 架构 + 操作系统 | 安装包 |
 | --- | --- |
 | x86/x64 Windows 10/11 | exe |
-| x64 银河麒麟 V10 及以上 | deb |
-| ARM64 银河麒麟 V10 及以上 | deb |
-| x64 UOS V20 | deb |
-| ARM64 UOS V20 | deb |
+| x64 银河麒麟系统 | deb |
+| ARM64 银河麒麟系统 | deb |
+| x64 UOS系统 | deb |
+| ARM64 UOS系统 | deb |
 
 ## GitHub 管理
 

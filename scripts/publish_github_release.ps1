@@ -1,8 +1,8 @@
 param(
   [string]$Owner = "iwannawi",
   [string]$Repo = "wps-read-aloud-comate",
-  [string]$Version = "1.1.20",
-  [string]$ReleaseDate = "20260526",
+  [string]$Version = "1.2.0",
+  [string]$ReleaseDate = "2026/05/26",
   [string]$Tag = "",
   [switch]$PromptToken
 )
@@ -10,14 +10,20 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Tag)) {
-  $Tag = "v$Version-$ReleaseDate"
+  $TagDate = ($ReleaseDate -replace "[^0-9]", "")
+  if ([string]::IsNullOrWhiteSpace($TagDate)) {
+    throw "ReleaseDate must contain a numeric date, for example 2026/05/26."
+  }
+  $Tag = "v$Version-$TagDate"
 }
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $PlatformMatrix = Join-Path $Root "packaging\platforms.json"
 $ReleaseNotes = Join-Path $Root "RELEASE_NOTES.md"
 $Checksums = Join-Path $Root "CHECKSUMS.txt"
-$Log = Join-Path $Root "dist\github-release-${Tag}.log"
+$SafeTag = ($Tag -replace "[\\/:*?`"<>|]", "_")
+$Log = Join-Path $Root "build\logs\github-release-${SafeTag}.log"
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Log) | Out-Null
 
 function Write-Log($Text) {
   $Text | Tee-Object -FilePath $Log -Append
@@ -164,14 +170,15 @@ foreach ($Path in $Artifacts) {
     throw "Missing required release artifact: $Path"
   }
 }
-$PythonCandidates = @(
-  "C:\Users\zhangjingyao\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe",
-  "python"
-)
+$PythonCandidates = @()
+if (![string]::IsNullOrWhiteSpace($env:PYTHON)) {
+  $PythonCandidates += $env:PYTHON
+}
+$PythonCandidates += @("py", "python", "python3")
 $Python = ""
 foreach ($Candidate in $PythonCandidates) {
-  if ($Candidate -eq "python") {
-    $Cmd = Get-Command python -ErrorAction SilentlyContinue
+  if ($Candidate -in @("py", "python", "python3")) {
+    $Cmd = Get-Command $Candidate -ErrorAction SilentlyContinue
     if ($Cmd) {
       $Python = $Cmd.Source
       break

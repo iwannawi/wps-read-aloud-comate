@@ -32,7 +32,7 @@ public static class WpsReadAloudWindowIcon {
   [DllImport("user32.dll")]
   public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
   public static void SetAppId() {
-    try { SetCurrentProcessExplicitAppUserModelID("ZhangJingyao.WpsReadAloudComate"); } catch {}
+    try { SetCurrentProcessExplicitAppUserModelID("Comate.WpsReadAloud"); } catch {}
   }
   public static void SetIcon(IntPtr handle, IntPtr icon) {
     try {

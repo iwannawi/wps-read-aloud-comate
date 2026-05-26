@@ -14,13 +14,13 @@ UOS_APP_ID = "cn.wps-read-aloud-comate"
 SERVICE_NAME = "wps-read-aloud-comate.service"
 LEGACY_SERVICE_NAME = "wps-tts.service"
 REGISTER_BIN_NAME = "wps-read-aloud-comate-register"
-VERSION = os.environ.get("VERSION", "1.1.20")
-RELEASE_DATE = os.environ.get("RELEASE_DATE", "20260526")
+VERSION = os.environ.get("VERSION", "1.2.0")
+RELEASE_DATE = os.environ.get("RELEASE_DATE", "2026/05/26")
 ARCH = os.environ.get("ARCH", "arm64")
 DISTRO = os.environ.get("DISTRO", "kylin").lower()
 DISTRO_LABELS = {
-    "kylin": "银河麒麟 V10 及以上",
-    "uos": "UOS V20",
+    "kylin": "银河麒麟系统",
+    "uos": "UOS系统",
 }
 ARCH_LABELS = {
     "amd64": "x64",
@@ -59,7 +59,6 @@ REQUIRED = [
     "third_party_licenses/SHERPA_ONNX_MODELS_LICENSE.md",
     "third_party_licenses/ONNXRUNTIME_LICENSE.txt",
     "RELEASE_NOTES.md",
-    "ACCEPTANCE_TEST.md",
     "SOURCE_OFFER.md",
     "docs/MULTI_PLATFORM_PACKAGING.md",
 ]
@@ -79,7 +78,6 @@ DOC_FILES = [
 
 PROJECT_DOC_FILES = [
     "RELEASE_NOTES.md",
-    "ACCEPTANCE_TEST.md",
     "SOURCE_OFFER.md",
     "docs/MULTI_PLATFORM_PACKAGING.md",
 ]

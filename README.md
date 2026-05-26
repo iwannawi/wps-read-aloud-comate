@@ -10,11 +10,11 @@
 
 | 目标 | CPU 架构 + 操作系统 | WPS 要求 | 安装包 |
 | --- | --- | --- | --- |
-| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.20_windows.exe |
-| 银河麒麟 | x64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.20_amd64.deb |
-| 银河麒麟 | ARM64 银河麒麟 V10 及以上 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.1.20_arm64.deb |
-| UOS | x64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.20_amd64.deb |
-| UOS | ARM64 UOS V20 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.1.20_arm64.deb |
+| Windows | x86/x64 Windows 10/11 | WPS Office 2019 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.2.0_windows.exe |
+| 银河麒麟系统 | x64 银河麒麟系统 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.2.0_amd64.deb |
+| 银河麒麟系统 | ARM64 银河麒麟系统 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | wps-read-aloud-comate_1.2.0_arm64.deb |
+| UOS系统 | x64 UOS系统 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.2.0_amd64.deb |
+| UOS系统 | ARM64 UOS系统 | WPS Office 2019 for Linux 或更高版本，推荐最新稳定版 | cn.wps-read-aloud-comate_1.2.0_arm64.deb |
 
 通用要求：
 
@@ -41,7 +41,7 @@
 
 ### 平台差异
 
-| 项目 | x86/x64 Windows 10/11 | x64/ARM64 银河麒麟 V10 及以上 | x64/ARM64 UOS V20 |
+| 项目 | x86/x64 Windows 10/11 | x64/ARM64 银河麒麟系统 | x64/ARM64 UOS系统 |
 | --- | --- | --- | --- |
 | 安装包 | exe 图形安装程序 | deb 安装包 | cn. 开头的 deb 安装包 |
 | 安装目录 | 当前用户目录，默认 %LOCALAPPDATA%\Programs\WPS Read Aloud Comate | /opt/wps-read-aloud-comate | /opt/apps/cn.wps-read-aloud-comate/files |
@@ -104,27 +104,23 @@
 
 | 目标 | 命令或操作 |
 | --- | --- |
-| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.1.20_windows.exe |
-| x64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.20_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | sudo dpkg -i dist/wps-read-aloud-comate_1.1.20_arm64.deb |
-| x64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.20_amd64.deb |
-| ARM64 UOS V20 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.1.20_arm64.deb |
+| x86/x64 Windows 10/11 | 运行 dist/wps-read-aloud-comate_1.2.0_windows.exe |
+| x64 银河麒麟系统 | sudo dpkg -i dist/wps-read-aloud-comate_1.2.0_amd64.deb |
+| ARM64 银河麒麟系统 | sudo dpkg -i dist/wps-read-aloud-comate_1.2.0_arm64.deb |
+| x64 UOS系统 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.2.0_amd64.deb |
+| ARM64 UOS系统 | sudo dpkg -i dist/cn.wps-read-aloud-comate_1.2.0_arm64.deb |
 
-Windows 安装程序会检测 WPS 安装路径、版本和可执行文件位数。加载项通过本地服务工作，不注入 WPS 进程，因此同一套 Windows 本地服务可服务 32 位和 64 位 WPS。Windows 端默认安装到当前用户目录，写入当前用户 WPS jsaddons 配置、当前用户 Run 自启动项和当前用户卸载注册表；安装器只清理本项目历史版本写入过的旧 OEM 指向项，不再依赖 OEM 离线模式。
+安装后请彻底退出并重新打开 WPS。Windows 安装器会自动检测 WPS、启动本机朗读服务、写入 publish.xml、注册当前用户自启动项和卸载入口。Linux 安装包会安装 systemd 服务、WPS 加载项注册脚本、说明文件、许可证文件和安装日志。
 
-Windows 版本采用 publish.xml 在线发布模式。安装时会写入当前用户 jsaddons 下的 publish.xml，加载项地址为 http://127.0.0.1:19860/addin/；安装器会立即启动本机朗读服务，并在当前用户 Run 自启动项中注册服务启动脚本，确保 WPS 打开时加载项地址可访问。安装完成后请彻底退出并重新打开 WPS。停止朗读只停止当前朗读会话、播放和正在运行的语音合成子进程，不关闭本机发布服务。卸载入口会写入当前用户开始菜单“WPS文档朗读助手”文件夹和系统“应用和功能”；如安装器在管理员上下文运行，会额外写入公共开始菜单入口。卸载时清理安装文件、WPS 加载项配置、授权缓存、Run 自启动项、旧计划任务、开始菜单入口、注册表项和本项目写入过的 OEM 残留指向项。
-
-Windows WPS 首次信任第三方加载项时，可能显示 WPS 原生安全确认框。该弹窗由 Windows 版 WPS 客户端安全策略生成，项目不能合规地绕过或伪造关闭。安装脚本会保留已允许记录，升级安装时不主动清除授权缓存，尽量避免重复出现。
-
-Linux 安装包会安装 systemd 服务、WPS 加载项注册脚本、说明文件、许可证文件和安装日志。银河麒麟包安装到 /opt/wps-read-aloud-comate，UOS 包安装到 /opt/apps/cn.wps-read-aloud-comate/files。安装后如 WPS 已打开，需要彻底退出并重新打开 WPS。
+Windows WPS 首次信任第三方加载项时，可能显示原生安全确认框。该弹窗由 WPS 客户端策略生成，项目不绕过或伪造关闭。
 
 ## 卸载
 
 | 目标 | 操作 | 清理范围 |
 | --- | --- | --- |
 | x86/x64 Windows 10/11 | 开始菜单“WPS文档朗读助手”文件夹中运行“卸载 WPS文档朗读助手”，或在系统“应用和功能”中卸载 | 停止本机服务，清理安装目录、WPS 加载项配置、授权缓存、Run 自启动项、旧计划任务、开始菜单入口、卸载注册表和本项目旧 OEM 指向项 |
-| x64/ARM64 银河麒麟 V10 及以上 | sudo apt remove wps-read-aloud-comate；如需彻底清理配置，执行 sudo apt purge wps-read-aloud-comate | remove 会停止 systemd 服务、移除包内文件并清理用户 WPS 加载项注册；purge 会额外清理配置目录和运行数据 |
-| x64/ARM64 UOS V20 | sudo apt remove cn.wps-read-aloud-comate；如需彻底清理配置，执行 sudo apt purge cn.wps-read-aloud-comate | remove 会停止 systemd 服务、移除包内文件并清理用户 WPS 加载项注册；purge 会额外清理配置目录和运行数据 |
+| x64/ARM64 银河麒麟系统 | sudo apt remove wps-read-aloud-comate；如需彻底清理配置，执行 sudo apt purge wps-read-aloud-comate | remove 会停止 systemd 服务、移除包内文件并清理用户 WPS 加载项注册；purge 会额外清理配置目录和运行数据 |
+| x64/ARM64 UOS系统 | sudo apt remove cn.wps-read-aloud-comate；如需彻底清理配置，执行 sudo apt purge cn.wps-read-aloud-comate | remove 会停止 systemd 服务、移除包内文件并清理用户 WPS 加载项注册；purge 会额外清理配置目录和运行数据 |
 
 ## 验证
 

@@ -1105,14 +1105,14 @@
       height: 720,
       message: "面向 WPS Office 的本地离线文档朗读加载项。",
       fields: [
-        { label: "版本", value: "1.1.20" },
-        { label: "发布日期", value: "20260526" },
-        { label: "开发者", value: "Zhang Jingyao" },
+        { label: "版本", value: "1.2.0" },
+        { label: "发布日期", value: "2026/05/26" },
+        { label: "开发者", value: "ZHANG JING YAO" },
         { label: "软件包", value: "wps-read-aloud-comate" },
-        { label: "支持系统", value: "x86/x64 Windows 10/11；x64 银河麒麟 V10+；ARM64 银河麒麟 V10+；x64 UOS V20；ARM64 UOS V20" },
+        { label: "支持系统", value: "x86/x64 Windows 10/11；x64 银河麒麟系统；ARM64 银河麒麟系统；x64 UOS系统；ARM64 UOS系统" },
         { label: "WPS 要求", value: "WPS Office 2019 或更高版本，推荐最新稳定版" },
         { label: "服务地址", value: "127.0.0.1:19860" },
-        { label: "版权", value: "Copyright © 2026 Zhang Jingyao" },
+        { label: "版权", value: "Copyright © 2026 ZHANG JING YAO" },
         { label: "开源组件", value: "本软件包含第三方开源组件，相关版权和许可见第三方声明。" }
       ],
       links: [

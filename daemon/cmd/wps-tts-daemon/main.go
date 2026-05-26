@@ -362,7 +362,6 @@ func (s *Server) docs(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(r.URL.Path)
 	allowed := map[string]bool{
 		"RELEASE_NOTES.md":         true,
-		"ACCEPTANCE_TEST.md":       true,
 		"THIRD_PARTY_NOTICES.md":   true,
 		"SOURCE_OFFER.md":          true,
 		"BUILD_RELEASE_LESSONS.md": true,

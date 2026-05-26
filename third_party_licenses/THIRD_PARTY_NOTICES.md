@@ -2,18 +2,18 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-开发者：Zhang Jingyao
-发布时间：20260522
+开发者：ZHANG JING YAO
+发布时间：2026/05/26
 
 本软件包内置离线语音运行组件，用于在以下目标环境提供本地文档朗读能力：
 
 | CPU 架构 + 操作系统 | 安装位置 |
 | --- | --- |
 | x86/x64 Windows 10/11 | 用户选择的程序目录 |
-| x64 银河麒麟 V10 及以上 | /opt/wps-read-aloud-comate |
-| ARM64 银河麒麟 V10 及以上 | /opt/wps-read-aloud-comate |
-| x64 UOS V20 | /opt/apps/cn.wps-read-aloud-comate/files |
-| ARM64 UOS V20 | /opt/apps/cn.wps-read-aloud-comate/files |
+| x64 银河麒麟系统 | /opt/wps-read-aloud-comate |
+| ARM64 银河麒麟系统 | /opt/wps-read-aloud-comate |
+| x64 UOS系统 | /opt/apps/cn.wps-read-aloud-comate/files |
+| ARM64 UOS系统 | /opt/apps/cn.wps-read-aloud-comate/files |
 
 第三方组件仅安装在本项目专用目录下，不写入系统公共库目录。
 

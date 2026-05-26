@@ -2,17 +2,17 @@
 
 本项目使用同一套源码，根据目标环境生成不同安装包。环境名称统一写成“CPU 架构 + 操作系统名”。
 
-交付时必须同时说明共通能力和平台差异。Windows、银河麒麟和 UOS 共用 WPS JS 加载项、本地 Go 服务、Sherpa-onnx 模型和文本预处理规则；安装方式、启动方式、播放层、日志位置和 WPS 首次许可提示存在差异。
+交付时必须同时说明共通能力和平台差异。Windows、银河麒麟系统和 UOS系统 共用 WPS JS 加载项、本地 Go 服务、Sherpa-onnx 模型和文本预处理规则；安装方式、启动方式、播放层、日志位置和 WPS 首次许可提示存在差异。
 
 ## 交付矩阵
 
 | 目标 | 安装包 | 安装路径 | 启动方式 |
 | --- | --- | --- | --- |
-| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.1.20_windows.exe | 用户选择的程序目录 | publish.xml 注册加载项；本机服务安装后启动并随当前用户登录自启动 |
-| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.20_amd64.deb | /opt/wps-read-aloud-comate | systemd |
-| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.20_arm64.deb | /opt/wps-read-aloud-comate | systemd |
-| x64 UOS V20 | cn.wps-read-aloud-comate_1.1.20_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
-| ARM64 UOS V20 | cn.wps-read-aloud-comate_1.1.20_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.2.0_windows.exe | 用户选择的程序目录 | publish.xml 注册加载项；本机服务安装后启动并随当前用户登录自启动 |
+| x64 银河麒麟系统 | wps-read-aloud-comate_1.2.0_amd64.deb | /opt/wps-read-aloud-comate | systemd |
+| ARM64 银河麒麟系统 | wps-read-aloud-comate_1.2.0_arm64.deb | /opt/wps-read-aloud-comate | systemd |
+| x64 UOS系统 | cn.wps-read-aloud-comate_1.2.0_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| ARM64 UOS系统 | cn.wps-read-aloud-comate_1.2.0_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
 
 ## 共用内容
 
@@ -27,10 +27,10 @@
 | 目标 | 差异点 |
 | --- | --- |
 | x86/x64 Windows 10/11 | Windows daemon、Windows Sherpa-onnx、图形安装器、publish.xml 加载项注册、Run 自启动、WinMM 播放、开始菜单和控制面板卸载入口、WPS 原生第三方加载项许可确认。 |
-| x64 银河麒麟 V10 及以上 | x64 Linux daemon、x64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
-| ARM64 银河麒麟 V10 及以上 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
-| x64 UOS V20 | x64 Linux daemon、x64 Linux Sherpa-onnx、UOS 应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
-| ARM64 UOS V20 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、UOS 应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
+| x64 银河麒麟系统 | x64 Linux daemon、x64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
+| ARM64 银河麒麟系统 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、Debian 控制脚本、systemd、Linux 桌面音频播放器探测。 |
+| x64 UOS系统 | x64 Linux daemon、x64 Linux Sherpa-onnx、UOS系统应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
+| ARM64 UOS系统 | ARM64 Linux daemon、ARM64 Linux Sherpa-onnx、UOS系统应用目录、cn. 包名、systemd、Linux 桌面音频播放器探测。 |
 
 Windows 加载项通过 127.0.0.1 调用独立服务，不向 WPS 进程注入 DLL。同一套 Windows 服务可服务 32 位和 64 位 WPS，安装日志仍会记录 WPS 位数。Windows 顶部选项卡使用 WPS 官方 publish.xml 模式：安装器在当前用户 jsaddons 下写入 jspluginonline 入口，地址指向 http://127.0.0.1:19860/addin/；本机服务安装后立即启动，并通过当前用户 Run 自启动项在登录后自动启动。语音合成由 sherpa-onnx-offline-tts.exe 子进程完成，只在朗读、自检等需要合成音频时启动，停止朗读会终止当前合成和播放，但不会关闭本机发布服务。Windows WPS 可能显示原生第三方加载项许可确认框，该确认框由 WPS 客户端安全策略生成，安装包只能保留已允许记录，不能合规绕过。
 
@@ -38,7 +38,7 @@ Windows 安装包必须注册开始菜单文件夹和当前用户“应用和功
 
 Linux 安装包必须提供完整卸载流程。执行 remove 时，应停止 systemd 服务、移除包内文件，并清理所有普通用户主目录下由本项目写入的 WPS 加载项注册和加载项副本；执行 purge 时，应额外清理配置目录、运行数据、本项目安装标记目录和注册脚本。
 
-Linux 安装包使用 systemd 管理服务，音频播放依赖当前桌面环境可用的 pw-play、paplay 或 aplay。银河麒麟包和 UOS 包的安装路径与包名不同，不能混用打包规范。
+Linux 安装包使用 systemd 管理服务，音频播放依赖当前桌面环境可用的 pw-play、paplay 或 aplay。银河麒麟系统包和 UOS系统包的安装路径与包名不同，不能混用打包规范。
 
 ## 构建命令
 

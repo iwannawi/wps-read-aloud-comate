@@ -352,7 +352,7 @@ func (s *Server) docs(w http.ResponseWriter, r *http.Request) {
 	switch name {
 	case "THIRD_PARTY_NOTICES.md":
 		http.ServeFile(w, r, filepath.Join(s.root, "third_party_licenses", name))
-	case "RELEASE_NOTES.md", "SOURCE_OFFER.md", "ACCEPTANCE_TEST.md":
+	case "RELEASE_NOTES.md", "SOURCE_OFFER.md":
 		http.ServeFile(w, r, filepath.Join(s.root, name))
 	default:
 		http.NotFound(w, r)
