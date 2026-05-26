@@ -2,8 +2,8 @@
 
 软件名称：WPS 文档朗读助手
 软件包：wps-read-aloud-comate
-版本：1.1.18
-发布时间：20260525
+版本：1.1.19
+发布时间：20260526
 开发者：Zhang Jingyao
 
 ## 适用环境
@@ -18,25 +18,26 @@
 
 ## 变更
 
-- Windows 端恢复为已验证可显示选项卡的 publish 模式：写入 publish.xml 的 jspluginonline 入口，地址为 http://127.0.0.1:19860/addin/。
-- Windows 安装后立即启动本机朗读服务，并写入当前用户 Run 自启动项，确保 WPS 启动时加载项发布地址可访问。
-- Windows 本机朗读服务取消空闲自动退出，保持常驻，直到用户卸载、系统退出或进程被手动结束。
-- Windows 开始菜单卸载入口同时写入当前用户 Programs 和公共 CommonPrograms 下的“WPS文档朗读助手”文件夹。
+- Windows 安装阶段改为直接启动本机朗读服务程序，再等待 127.0.0.1:19860 健康检查通过；开机自启动仍使用 start-daemon.ps1 启动脚本。
+- Windows 覆盖安装前会清理安装目录中的本项目旧载荷、旧说明文件和旧压缩包残留，避免旧版本文件混入新版本。
+- Windows 安装完成后继续使用 publish.xml 在线发布模式，并保留当前用户 Run 自启动项，确保 WPS 启动时加载项地址可访问。
+- Windows 开始菜单卸载入口优先写入当前用户开始菜单；在管理员上下文中再额外写入公共开始菜单，避免非管理员安装日志出现公共目录权限报错。
 
 ## 修复
 
-- 修复 Windows 端 OEM 离线模式下部分 WPS 版本仍看不到“文档朗读”选项卡的问题。
-- 修复 Windows 11 开始菜单中“WPS文档朗读助手”文件夹可能未显示的问题。
+- 修复 Windows 安装日志显示“本机朗读服务启动失败”的问题。原因是安装器通过隐藏 PowerShell 启动脚本间接拉起服务时，在部分 Windows 11 环境下未能稳定完成启动；新版本改为安装器直接启动 daemon。
+- 修复升级安装后安装目录可能残留上一版本文件的问题。
+- 优化安装失败定位：服务程序、配置文件、发布地址和健康检查在安装阶段直接验证。
 
 ## 交付文件
 
 | 目标 | 文件 |
 | --- | --- |
-| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.18_windows.exe |
-| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.18_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.18_arm64.deb |
-| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.18_amd64.deb |
-| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.18_arm64.deb |
+| x86/x64 Windows 10/11 | dist/wps-read-aloud-comate_1.1.19_windows.exe |
+| x64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.19_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | dist/wps-read-aloud-comate_1.1.19_arm64.deb |
+| x64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.19_amd64.deb |
+| ARM64 UOS V20 | dist/cn.wps-read-aloud-comate_1.1.19_arm64.deb |
 
 ## 已知限制
 

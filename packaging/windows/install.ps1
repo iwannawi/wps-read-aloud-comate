@@ -197,6 +197,34 @@ function Stop-InstalledDaemonProcess {
     }
 }
 
+function Clear-InstalledPayload {
+  param([string]$Root)
+  if ([string]::IsNullOrWhiteSpace($Root) -or !(Test-Path $Root)) {
+    return
+  }
+  $KnownNames = @(
+    "addin",
+    "daemon",
+    "engines",
+    "installer-assets",
+    "third_party_licenses",
+    "voices",
+    "ACCEPTANCE_TEST.md",
+    "RELEASE_NOTES.md",
+    "SOURCE_OFFER.md",
+    "config.yaml",
+    "install-state.json",
+    "start-daemon.ps1",
+    "uninstall.ps1",
+    "version.json"
+  )
+  foreach ($Name in $KnownNames) {
+    Remove-Item -LiteralPath (Join-Path $Root $Name) -Recurse -Force -ErrorAction SilentlyContinue
+  }
+  Get-ChildItem -LiteralPath $Root -Filter "*.7z" -File -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 function Get-PeArchitecture {
   param([string]$Path)
   if (!(Test-Path $Path)) {
@@ -538,12 +566,26 @@ function Register-DaemonStartup {
 }
 
 function Start-DaemonNow {
-  param([string]$Launcher)
-  $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
-  if (!(Test-Path $PowerShell)) {
-    $PowerShell = "powershell.exe"
+  param(
+    [string]$Root,
+    [string]$Daemon,
+    [string]$Config
+  )
+  $Healthy = $false
+  try {
+    $Response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:19860/health" -TimeoutSec 2
+    $Healthy = ($Response.StatusCode -ge 200 -and $Response.StatusCode -lt 500)
   }
-  Start-Process -FilePath $PowerShell -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", $Launcher) -WindowStyle Hidden | Out-Null
+  catch {
+    $Healthy = $false
+  }
+  if ($Healthy) {
+    return
+  }
+  if (!(Test-Path $Daemon)) {
+    throw "安装包不完整：未找到本机朗读服务程序。"
+  }
+  Start-Process -FilePath $Daemon -ArgumentList @("-config", $Config) -WorkingDirectory $Root -WindowStyle Hidden | Out-Null
 }
 
 function Wait-LocalServiceHealthy {
@@ -584,6 +626,17 @@ function New-Shortcut {
   $Shortcut.Save()
 }
 
+function Test-IsAdministrator {
+  try {
+    $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
+    return $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  }
+  catch {
+    return $false
+  }
+}
+
 function New-UninstallShortcut {
   param([string]$Root)
   $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -599,7 +652,7 @@ function New-UninstallShortcut {
     $Folders += (Join-Path $UserPrograms "WPS文档朗读助手")
   }
   $CommonPrograms = [Environment]::GetFolderPath("CommonPrograms")
-  if (![string]::IsNullOrWhiteSpace($CommonPrograms)) {
+  if ((Test-IsAdministrator) -and ![string]::IsNullOrWhiteSpace($CommonPrograms)) {
     $Folders += (Join-Path $CommonPrograms "WPS文档朗读助手")
   }
   foreach ($Folder in ($Folders | Sort-Object -Unique)) {
@@ -684,6 +737,7 @@ try {
   Stop-InstalledDaemonProcess -Root $InstallDir
   Write-InstallProgress -Percent 35 -Action "复制程序文件" -Detail "安装路径：$InstallDir"
   New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+  Clear-InstalledPayload -Root $InstallDir
   Copy-Item -Path (Join-Path $Source "*") -Destination $InstallDir -Recurse -Force
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot "uninstall.ps1") -Destination (Join-Path $InstallDir "uninstall.ps1") -Force
   if (Test-Path (Join-Path $PSScriptRoot "installer-assets")) {
@@ -700,7 +754,7 @@ try {
   $Launcher = New-DaemonLauncher -Root $InstallDir -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
   Write-InstallProgress -Percent 55 -Action "配置本机服务" -Detail "正在注册并启动本机朗读服务"
   Register-DaemonStartup -Launcher $Launcher
-  Start-DaemonNow -Launcher $Launcher
+  Start-DaemonNow -Root $InstallDir -Daemon $Daemon -Config (Join-Path $InstallDir "config.yaml")
   if (!(Wait-LocalServiceHealthy -TimeoutSeconds 25)) {
     throw "本机朗读服务启动失败。请确认 127.0.0.1:19860 未被其他程序占用，并查看安装日志。"
   }

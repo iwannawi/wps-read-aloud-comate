@@ -6,10 +6,10 @@
 
 | CPU 架构 + 操作系统 | 包名 | 文件 |
 | --- | --- | --- |
-| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate | dist/wps-read-aloud-comate_1.1.18_amd64.deb |
-| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate | dist/wps-read-aloud-comate_1.1.18_arm64.deb |
-| x64 UOS V20 | cn.wps-read-aloud-comate | dist/cn.wps-read-aloud-comate_1.1.18_amd64.deb |
-| ARM64 UOS V20 | cn.wps-read-aloud-comate | dist/cn.wps-read-aloud-comate_1.1.18_arm64.deb |
+| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate | dist/wps-read-aloud-comate_1.1.19_amd64.deb |
+| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate | dist/wps-read-aloud-comate_1.1.19_arm64.deb |
+| x64 UOS V20 | cn.wps-read-aloud-comate | dist/cn.wps-read-aloud-comate_1.1.19_amd64.deb |
+| ARM64 UOS V20 | cn.wps-read-aloud-comate | dist/cn.wps-read-aloud-comate_1.1.19_arm64.deb |
 
 ## 安装内容
 

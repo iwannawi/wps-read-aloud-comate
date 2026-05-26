@@ -16,13 +16,6 @@ import (
 var payloadMarker = []byte("WPS_READ_ALOUD_COMATE_PAYLOAD_ZIP_V1\n")
 
 func main() {
-	if !isAdmin() {
-		if err := relaunchElevated(); err != nil {
-			showMessage("WPS 文档朗读助手安装失败", "安装需要修改 WPS 的 oem.ini 配置。请右键以管理员身份运行安装程序。\n\n错误代码："+err.Error(), 0x10)
-			os.Exit(1)
-		}
-		return
-	}
 	usedUI, err := run()
 	if err != nil {
 		title := "WPS 文档朗读助手安装失败"
