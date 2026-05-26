@@ -8,11 +8,11 @@
 
 | 目标 | 安装包 | 安装路径 | 启动方式 |
 | --- | --- | --- | --- |
-| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.1.19_windows.exe | 用户选择的程序目录 | publish.xml 注册加载项；本机服务安装后启动并随当前用户登录自启动 |
-| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.19_amd64.deb | /opt/wps-read-aloud-comate | systemd |
-| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.19_arm64.deb | /opt/wps-read-aloud-comate | systemd |
-| x64 UOS V20 | cn.wps-read-aloud-comate_1.1.19_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
-| ARM64 UOS V20 | cn.wps-read-aloud-comate_1.1.19_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| x86/x64 Windows 10/11 | wps-read-aloud-comate_1.1.20_windows.exe | 用户选择的程序目录 | publish.xml 注册加载项；本机服务安装后启动并随当前用户登录自启动 |
+| x64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.20_amd64.deb | /opt/wps-read-aloud-comate | systemd |
+| ARM64 银河麒麟 V10 及以上 | wps-read-aloud-comate_1.1.20_arm64.deb | /opt/wps-read-aloud-comate | systemd |
+| x64 UOS V20 | cn.wps-read-aloud-comate_1.1.20_amd64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
+| ARM64 UOS V20 | cn.wps-read-aloud-comate_1.1.20_arm64.deb | /opt/apps/cn.wps-read-aloud-comate/files | systemd |
 
 ## 共用内容
 
@@ -34,7 +34,9 @@
 
 Windows 加载项通过 127.0.0.1 调用独立服务，不向 WPS 进程注入 DLL。同一套 Windows 服务可服务 32 位和 64 位 WPS，安装日志仍会记录 WPS 位数。Windows 顶部选项卡使用 WPS 官方 publish.xml 模式：安装器在当前用户 jsaddons 下写入 jspluginonline 入口，地址指向 http://127.0.0.1:19860/addin/；本机服务安装后立即启动，并通过当前用户 Run 自启动项在登录后自动启动。语音合成由 sherpa-onnx-offline-tts.exe 子进程完成，只在朗读、自检等需要合成音频时启动，停止朗读会终止当前合成和播放，但不会关闭本机发布服务。Windows WPS 可能显示原生第三方加载项许可确认框，该确认框由 WPS 客户端安全策略生成，安装包只能保留已允许记录，不能合规绕过。
 
-Windows 安装包必须注册开始菜单卸载入口和当前用户“应用和功能”卸载信息。开始菜单入口写入当前用户 Programs 下的“WPS文档朗读助手”文件夹；管理员上下文安装时可额外写入公共 CommonPrograms。卸载时必须清理安装目录、WPS 加载项注册、授权缓存、本项目开始菜单入口、卸载注册表、Run 自启动项、旧计划任务和本项目写入过的 OEM 残留指向项。
+Windows 安装包必须注册开始菜单文件夹和当前用户“应用和功能”卸载信息。开始菜单入口写入当前用户 Programs 下的“WPS文档朗读助手”文件夹，文件夹内至少包含“打开安装目录”和“卸载 WPS文档朗读助手”两个快捷方式，避免 Windows 11 将单快捷方式文件夹扁平化显示；管理员上下文安装时可额外写入公共 CommonPrograms。卸载时必须清理安装目录、WPS 加载项注册、授权缓存、本项目开始菜单入口、卸载注册表、Run 自启动项、旧计划任务和本项目写入过的 OEM 残留指向项。
+
+Linux 安装包必须提供完整卸载流程。执行 remove 时，应停止 systemd 服务、移除包内文件，并清理所有普通用户主目录下由本项目写入的 WPS 加载项注册和加载项副本；执行 purge 时，应额外清理配置目录、运行数据、本项目安装标记目录和注册脚本。
 
 Linux 安装包使用 systemd 管理服务，音频播放依赖当前桌面环境可用的 pw-play、paplay 或 aplay。银河麒麟包和 UOS 包的安装路径与包名不同，不能混用打包规范。
 

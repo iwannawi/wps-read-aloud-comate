@@ -168,7 +168,11 @@ def check_windows_package(target: dict, artifact: Path) -> None:
             fail(f"Windows installer still contains offline OEM package registration: {artifact.name}")
         if "WPSReadAloudComate" not in uninstall_script or "Uninstall" not in install_script:
             fail(f"Windows uninstall integration is incomplete: {artifact.name}")
-        if "WPS文档朗读助手" not in install_script or "卸载 WPS文档朗读助手.lnk" not in install_script:
+        if (
+            "WPS文档朗读助手" not in install_script
+            or "卸载 WPS文档朗读助手.lnk" not in install_script
+            or "打开安装目录.lnk" not in install_script
+        ):
             fail(f"Windows Start Menu uninstall shortcut is not in the required folder/name: {artifact.name}")
         if "Remove-WpsOemConfig" not in uninstall_script:
             fail(f"Windows uninstaller does not clean OEM offline mode config: {artifact.name}")

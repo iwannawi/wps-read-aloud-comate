@@ -637,15 +637,33 @@ function Test-IsAdministrator {
   }
 }
 
-function New-UninstallShortcut {
+function Clear-StartMenuEntries {
+  $Roots = @(
+    [Environment]::GetFolderPath("Programs"),
+    [Environment]::GetFolderPath("CommonPrograms")
+  )
+  foreach ($Root in $Roots) {
+    if ([string]::IsNullOrWhiteSpace($Root)) {
+      continue
+    }
+    foreach ($Name in @("WPS文档朗读助手", "WPS 文档朗读助手")) {
+      Remove-Item -LiteralPath (Join-Path $Root $Name) -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Remove-Item -LiteralPath (Join-Path $Root "卸载 WPS文档朗读助手.lnk") -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $Root "卸载 WPS 文档朗读助手.lnk") -Force -ErrorAction SilentlyContinue
+  }
+}
+
+function New-StartMenuShortcuts {
   param([string]$Root)
   $PowerShell = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
   if (!(Test-Path $PowerShell)) {
     $PowerShell = "powershell.exe"
   }
+  $Explorer = Join-Path $env:WINDIR "explorer.exe"
   $Shell = New-Object -ComObject WScript.Shell
   $IconPath = Join-Path $Root "installer-assets\app.ico"
-  $Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Root\uninstall.ps1`""
+  $UninstallArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Root\uninstall.ps1`""
   $Folders = @()
   $UserPrograms = [Environment]::GetFolderPath("Programs")
   if (![string]::IsNullOrWhiteSpace($UserPrograms)) {
@@ -657,9 +675,12 @@ function New-UninstallShortcut {
   }
   foreach ($Folder in ($Folders | Sort-Object -Unique)) {
     try {
-      $ShortcutPath = Join-Path $Folder "卸载 WPS文档朗读助手.lnk"
-      New-Shortcut -Shell $Shell -Path $ShortcutPath -TargetPath $PowerShell -Arguments $Arguments -WorkingDirectory $Root -IconPath $IconPath
-      Write-Host "已创建开始菜单卸载入口：$ShortcutPath"
+      New-Item -ItemType Directory -Force -Path $Folder | Out-Null
+      $OpenPath = Join-Path $Folder "打开安装目录.lnk"
+      $UninstallPath = Join-Path $Folder "卸载 WPS文档朗读助手.lnk"
+      New-Shortcut -Shell $Shell -Path $OpenPath -TargetPath $Explorer -Arguments "`"$Root`"" -WorkingDirectory $Root -IconPath $IconPath
+      New-Shortcut -Shell $Shell -Path $UninstallPath -TargetPath $PowerShell -Arguments $UninstallArguments -WorkingDirectory $Root -IconPath $IconPath
+      Write-Host "已创建开始菜单文件夹：$Folder"
     }
     catch {
       Write-Host "开始菜单入口创建失败，已跳过：$($_.Exception.Message)"
@@ -782,7 +803,8 @@ try {
   Write-InstallState -Root $InstallDir -WpsInfo $WpsInfo -PluginsXml $PluginsXml
   Write-Host "已写入 WPS publish 加载项地址：$LocalUrl"
   Write-InstallProgress -Percent 86 -Action "注册卸载入口" -Detail "正在写入开始菜单和控制面板卸载信息"
-  New-UninstallShortcut -Root $InstallDir
+  Clear-StartMenuEntries
+  New-StartMenuShortcuts -Root $InstallDir
   Register-UninstallEntry -Root $InstallDir -VersionInfo $VersionInfo
 
   Write-InstallProgress -Percent 100 -Action "安装完成" -Detail "请彻底退出并重新打开 WPS"

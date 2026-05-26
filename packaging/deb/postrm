@@ -8,11 +8,63 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] postrm $*"
 
 systemctl daemon-reload || true
 
+APP_DIR="@APP_ROOT@"
+CONFIG_DIR="@CONFIG_DIR@"
+SERVICE_NAME="@SERVICE_NAME@"
+REGISTER_BIN="@REGISTER_BIN@"
+ADDIN_NAME="文档朗读助手"
+ADDIN_LEGACY_NAME="wps-read-aloud"
+
+remove_xml_entry() {
+  local file="$1"
+  [[ -f "${file}" ]] || return 0
+  local tmp
+  tmp="$(mktemp)"
+  awk -v name="${ADDIN_NAME}" -v legacy="${ADDIN_LEGACY_NAME}" '
+    skip {
+      if ($0 ~ /<\/jsplugin>/) {
+        skip=0
+      }
+      next
+    }
+    $0 ~ "<jspluginonline[^>]*name=\"" name "\"" || $0 ~ "<jspluginonline[^>]*name=\"" legacy "\"" || $0 ~ /127\.0\.0\.1:19860/ {
+      next
+    }
+    $0 ~ "<jsplugin[^>]*name=\"" name "\"" || $0 ~ "<jsplugin[^>]*name=\"" legacy "\"" || $0 ~ /127\.0\.0\.1:19860/ {
+      if ($0 !~ /\/>/ && $0 !~ /<\/jsplugin>/) {
+        skip=1
+      }
+      next
+    }
+    { print }
+  ' "${file}" > "${tmp}"
+  cat "${tmp}" > "${file}"
+  rm -f "${tmp}"
+}
+
+cleanup_home_registration() {
+  local home_dir="$1"
+  local js_dir="${home_dir}/.local/share/Kingsoft/wps/jsaddons"
+  [[ -d "${js_dir}" ]] || return 0
+  rm -rf "${js_dir}/${ADDIN_NAME}_"* "${js_dir}/${ADDIN_LEGACY_NAME}_"* 2>/dev/null || true
+  remove_xml_entry "${js_dir}/publish.xml"
+  remove_xml_entry "${js_dir}/jsplugins.xml"
+  rm -f "${js_dir}/jsaddinblockhost.ini" 2>/dev/null || true
+}
+
+cleanup_all_user_registrations() {
+  while IFS=: read -r _ _ uid _ _ home shell; do
+    if [[ "${uid}" -ge 1000 && -d "${home}" && "${shell}" != */nologin && "${shell}" != */false ]]; then
+      cleanup_home_registration "${home}"
+    fi
+  done < /etc/passwd
+}
+
+if [[ "${1:-}" = "remove" || "${1:-}" = "purge" ]]; then
+  cleanup_all_user_registrations || true
+fi
+
 if [[ "${1:-}" = "purge" ]]; then
-  APP_DIR="@APP_ROOT@"
-  CONFIG_DIR="@CONFIG_DIR@"
-  SERVICE_NAME="@SERVICE_NAME@"
-  REGISTER_BIN="@REGISTER_BIN@"
   rm -f "/lib/systemd/system/${SERVICE_NAME}"
   rm -f "${REGISTER_BIN}"
   if [[ -f "${APP_DIR}/.wps-read-aloud-comate" || -f "${APP_DIR}/.wps-read-aloud-zhangjingyao" ]]; then
